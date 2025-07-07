@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,29 +23,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Mock data for campaigns
-const mockCampaigns = [
-  {
-    id: 1,
-    name: "Q4 2024 MSME Status Update",
-    description: "Quarterly status update for all registered vendors",
-    status: "Active",
-    totalVendors: 150,
-    responded: 45,
-    deadline: "2024-12-31",
-    createdAt: "2024-11-15",
-  },
-  {
-    id: 2,
-    name: "New Vendor Onboarding",
-    description: "MSME certification for newly registered vendors",
-    status: "Draft",
-    totalVendors: 25,
-    responded: 0,
-    deadline: "2024-12-20",
-    createdAt: "2024-11-20",
-  },
-];
+interface Campaign {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  totalVendors: number;
+  responded: number;
+  deadline: string | null;
+  created_at: string;
+}
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -57,12 +46,65 @@ const getStatusColor = (status: string) => {
 
 export default function Campaigns() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCampaigns = mockCampaigns.filter(campaign => {
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data: campaignsData, error: campaignsError } = await supabase
+        .from('msme_campaigns')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (campaignsError) throw campaignsError;
+
+      const campaignsWithStats = await Promise.all(
+        (campaignsData || []).map(async (campaign) => {
+          const totalVendors = campaign.target_vendors?.length || 0;
+          
+          const { data: responses, error: responsesError } = await supabase
+            .from('msme_responses')
+            .select('response_status')
+            .eq('campaign_id', campaign.id);
+
+          const responded = responses?.filter(r => r.response_status === 'Completed').length || 0;
+
+          return {
+            id: campaign.id,
+            name: campaign.name,
+            description: campaign.description,
+            status: campaign.status || 'Draft',
+            totalVendors,
+            responded,
+            deadline: campaign.deadline,
+            created_at: campaign.created_at,
+          };
+        })
+      );
+
+      setCampaigns(campaignsWithStats);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch campaigns. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         campaign.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (campaign.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || campaign.status.toLowerCase() === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -90,7 +132,7 @@ export default function Campaigns() {
             <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCampaigns.length}</div>
+            <div className="text-2xl font-bold">{campaigns.length}</div>
             <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
@@ -101,7 +143,7 @@ export default function Campaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockCampaigns.filter(c => c.status === 'Active').length}
+              {campaigns.filter(c => c.status === 'Active').length}
             </div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
@@ -113,7 +155,7 @@ export default function Campaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockCampaigns.reduce((sum, c) => sum + c.responded, 0)}
+              {campaigns.reduce((sum, c) => sum + c.responded, 0)}
             </div>
             <p className="text-xs text-muted-foreground">Across all campaigns</p>
           </CardContent>
@@ -125,8 +167,8 @@ export default function Campaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round((mockCampaigns.reduce((sum, c) => sum + c.responded, 0) / 
-                mockCampaigns.reduce((sum, c) => sum + c.totalVendors, 0)) * 100) || 0}%
+              {Math.round((campaigns.reduce((sum, c) => sum + c.responded, 0) / 
+                campaigns.reduce((sum, c) => sum + c.totalVendors, 0)) * 100) || 0}%
             </div>
             <p className="text-xs text-muted-foreground">Overall completion</p>
           </CardContent>
@@ -181,7 +223,13 @@ export default function Campaigns() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCampaigns.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Loading campaigns...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredCampaigns.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No campaigns found. Create your first campaign to get started.
@@ -218,8 +266,8 @@ export default function Campaigns() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{campaign.deadline}</TableCell>
-                      <TableCell>{campaign.createdAt}</TableCell>
+                      <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
+                      <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" size="sm">
                           View Details

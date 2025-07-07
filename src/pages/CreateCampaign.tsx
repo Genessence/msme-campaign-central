@@ -9,6 +9,8 @@ import { VendorSelection } from '@/components/campaign-wizard/VendorSelection';
 import { TemplateSelection } from '@/components/campaign-wizard/TemplateSelection';
 import { CampaignReview } from '@/components/campaign-wizard/CampaignReview';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface CampaignFormData {
   name: string;
@@ -37,6 +39,7 @@ export default function CreateCampaign() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const updateFormData = (data: Partial<CampaignFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -57,13 +60,53 @@ export default function CreateCampaign() {
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsSubmitting(true);
     try {
-      // Implementation for campaign creation will be added here
-      toast({
-        title: "Campaign Created",
-        description: `Campaign "${formData.name}" has been ${isDraft ? 'saved as draft' : 'launched'} successfully.`,
-      });
+      const { data, error } = await supabase
+        .from('msme_campaigns')
+        .insert({
+          name: formData.name,
+          description: formData.description,
+          deadline: formData.deadline,
+          target_vendors: formData.selectedVendors,
+          email_template_id: formData.emailTemplateId,
+          whatsapp_template_id: formData.whatsappTemplateId,
+          status: isDraft ? 'Draft' : 'Active',
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If not a draft, execute the campaign
+      if (!isDraft && data) {
+        const executeResponse = await supabase.functions.invoke('execute-campaign', {
+          body: { campaignId: data.id }
+        });
+
+        if (executeResponse.error) {
+          console.error('Campaign execution error:', executeResponse.error);
+          toast({
+            title: "Campaign Created but Execution Failed",
+            description: "Campaign was saved but messages could not be sent. Please try again from the campaigns page.",
+            variant: "destructive",
+          });
+        } else {
+          const { emailsSent, whatsappSent } = executeResponse.data;
+          toast({
+            title: "Campaign Launched Successfully",
+            description: `Campaign "${formData.name}" launched with ${emailsSent} emails and ${whatsappSent} WhatsApp messages sent.`,
+          });
+        }
+      } else {
+        toast({
+          title: "Campaign Saved",
+          description: `Campaign "${formData.name}" saved as draft successfully.`,
+        });
+      }
+
       navigate('/campaigns');
     } catch (error) {
+      console.error('Campaign creation error:', error);
       toast({
         title: "Error",
         description: "Failed to create campaign. Please try again.",
