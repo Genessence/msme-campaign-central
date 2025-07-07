@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Editor } from '@tinymce/tinymce-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import '../components/ui/react-quill-custom.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,34 +22,64 @@ export default function CreateEmailTemplate() {
   });
   const [newVariable, setNewVariable] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tinymceApiKey, setTinymceApiKey] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchTinymceApiKey();
-  }, []);
-
-  const fetchTinymceApiKey = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-tinymce-key');
-      
-      if (error) {
-        console.error('Error fetching TinyMCE API key:', error);
-        return;
-      }
-
-      if (data?.apiKey) {
-        setTinymceApiKey(data.apiKey);
-      }
-    } catch (error) {
-      console.error('Error fetching TinyMCE API key:', error);
-    }
-  };
 
   const handleEditorChange = (content: string) => {
     setFormData(prev => ({ ...prev, body: content }));
   };
+
+  // Custom variable insertion function
+  const insertVariable = (variable: string) => {
+    const quillEditor = document.querySelector('.ql-editor');
+    if (quillEditor) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textNode = document.createTextNode(`{${variable}}`);
+        range.deleteContents();
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
+  // React Quill configuration with email-optimized toolbar
+  const quillModules = {
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'font': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'align': [] }],
+        ['link', 'image'],
+        ['blockquote', 'code-block'],
+        ['clean']
+      ]
+    },
+    clipboard: {
+      matchVisual: false,
+    }
+  };
+
+  const quillFormats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'script',
+    'list', 'bullet', 'indent',
+    'align',
+    'link', 'image',
+    'blockquote', 'code-block'
+  ];
 
   const addVariable = () => {
     if (newVariable.trim() && !formData.variables.includes(newVariable.trim())) {
@@ -204,28 +236,41 @@ export default function CreateEmailTemplate() {
           <CardContent>
             <div className="space-y-2">
               <Label>Email Body *</Label>
-              <div className="border rounded-md">
-                <Editor
-                  apiKey={tinymceApiKey}
+              <div className="border rounded-md overflow-hidden">
+                <ReactQuill
                   value={formData.body}
-                  onEditorChange={handleEditorChange}
-                  init={{
-                    height: 400,
-                    menubar: false,
-                    plugins: [
-                      'advlist autolink lists link image charmap print preview anchor',
-                      'searchreplace visualblocks code fullscreen',
-                      'insertdatetime media table paste code help wordcount'
-                    ],
-                    toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px }',
-                    placeholder: 'Enter your email content here...',
+                  onChange={handleEditorChange}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Enter your email content here..."
+                  style={{ 
+                    height: '400px',
+                    backgroundColor: 'hsl(var(--background))',
                   }}
+                  theme="snow"
                 />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Use variables in your content like {"{vendor_name}"} to personalize emails
-              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <p className="text-sm text-muted-foreground flex-1">
+                  Use variables in your content like {"{vendor_name}"} to personalize emails
+                </p>
+                {formData.variables.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {formData.variables.slice(0, 3).map((variable) => (
+                      <Button
+                        key={variable}
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => insertVariable(variable)}
+                        className="text-xs h-6 px-2"
+                      >
+                        Insert {variable}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
