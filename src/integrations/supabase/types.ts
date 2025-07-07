@@ -231,13 +231,18 @@ export type Database = {
       vendors: {
         Row: {
           business_category: string | null
+          closing_balance: number | null
           created_at: string
+          credit_amount: number | null
+          debit_amount: number | null
           email: string | null
+          group_category: string | null
           id: string
           last_updated_date: string | null
           location: string | null
           msme_category: Database["public"]["Enums"]["msme_category"] | null
           msme_status: Database["public"]["Enums"]["msme_status"] | null
+          opening_balance: number | null
           phone: string | null
           registration_date: string | null
           udyam_number: string | null
@@ -247,13 +252,18 @@ export type Database = {
         }
         Insert: {
           business_category?: string | null
+          closing_balance?: number | null
           created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
           email?: string | null
+          group_category?: string | null
           id?: string
           last_updated_date?: string | null
           location?: string | null
           msme_category?: Database["public"]["Enums"]["msme_category"] | null
           msme_status?: Database["public"]["Enums"]["msme_status"] | null
+          opening_balance?: number | null
           phone?: string | null
           registration_date?: string | null
           udyam_number?: string | null
@@ -263,13 +273,18 @@ export type Database = {
         }
         Update: {
           business_category?: string | null
+          closing_balance?: number | null
           created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
           email?: string | null
+          group_category?: string | null
           id?: string
           last_updated_date?: string | null
           location?: string | null
           msme_category?: Database["public"]["Enums"]["msme_category"] | null
           msme_status?: Database["public"]["Enums"]["msme_status"] | null
+          opening_balance?: number | null
           phone?: string | null
           registration_date?: string | null
           udyam_number?: string | null

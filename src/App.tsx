@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
+import CreateCampaign from "./pages/CreateCampaign";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -69,6 +70,11 @@ const App = () => (
             <Route path="/campaigns" element={
               <ProtectedRoute>
                 <Campaigns />
+              </ProtectedRoute>
+            } />
+            <Route path="/campaigns/create" element={
+              <ProtectedRoute>
+                <CreateCampaign />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
