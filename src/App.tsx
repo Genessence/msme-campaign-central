@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
 import Templates from "./pages/Templates";
+import Vendors from "./pages/Vendors";
 import CreateEmailTemplate from "./pages/CreateEmailTemplate";
 import EditEmailTemplate from "./pages/EditEmailTemplate";
 import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
@@ -80,6 +81,11 @@ const App = () => (
             <Route path="/campaigns/create" element={
               <ProtectedRoute>
                 <CreateCampaign />
+              </ProtectedRoute>
+            } />
+            <Route path="/vendors" element={
+              <ProtectedRoute>
+                <Vendors />
               </ProtectedRoute>
             } />
             <Route path="/templates" element={
