@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,8 +20,30 @@ export default function CreateEmailTemplate() {
   });
   const [newVariable, setNewVariable] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tinymceApiKey, setTinymceApiKey] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchTinymceApiKey();
+  }, []);
+
+  const fetchTinymceApiKey = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-tinymce-key');
+      
+      if (error) {
+        console.error('Error fetching TinyMCE API key:', error);
+        return;
+      }
+
+      if (data?.apiKey) {
+        setTinymceApiKey(data.apiKey);
+      }
+    } catch (error) {
+      console.error('Error fetching TinyMCE API key:', error);
+    }
+  };
 
   const handleEditorChange = (content: string) => {
     setFormData(prev => ({ ...prev, body: content }));
@@ -184,7 +206,7 @@ export default function CreateEmailTemplate() {
               <Label>Email Body *</Label>
               <div className="border rounded-md">
                 <Editor
-                  apiKey="your-tinymce-api-key"
+                  apiKey={tinymceApiKey}
                   value={formData.body}
                   onEditorChange={handleEditorChange}
                   init={{
