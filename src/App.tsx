@@ -10,7 +10,9 @@ import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
 import Templates from "./pages/Templates";
 import CreateEmailTemplate from "./pages/CreateEmailTemplate";
+import EditEmailTemplate from "./pages/EditEmailTemplate";
 import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
+import EditWhatsAppTemplate from "./pages/EditWhatsAppTemplate";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -93,6 +95,16 @@ const App = () => (
             <Route path="/templates/whatsapp/create" element={
               <ProtectedRoute>
                 <CreateWhatsAppTemplate />
+              </ProtectedRoute>
+            } />
+            <Route path="/templates/email/edit/:id" element={
+              <ProtectedRoute>
+                <EditEmailTemplate />
+              </ProtectedRoute>
+            } />
+            <Route path="/templates/whatsapp/edit/:id" element={
+              <ProtectedRoute>
+                <EditWhatsAppTemplate />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
