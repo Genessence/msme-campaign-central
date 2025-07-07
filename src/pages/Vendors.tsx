@@ -253,26 +253,26 @@ export default function Vendors() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "MSME Certified":
-        return "bg-green-100 text-green-800";
+        return "bg-green-50 text-green-700 border-green-200";
       case "Non MSME":
-        return "bg-red-100 text-red-800";
+        return "bg-red-50 text-red-700 border-red-200";
       case "MSME Application Pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Micro":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "Small":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "Medium":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
