@@ -14,7 +14,301 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      document_uploads: {
+        Row: {
+          campaign_id: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          uploaded_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          uploaded_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          uploaded_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_uploads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "msme_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_uploads_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          subject: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
+      msme_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deadline: string | null
+          description: string | null
+          email_template_id: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["campaign_status"] | null
+          target_vendors: string[] | null
+          updated_at: string
+          whatsapp_template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          email_template_id?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          target_vendors?: string[] | null
+          updated_at?: string
+          whatsapp_template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          email_template_id?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          target_vendors?: string[] | null
+          updated_at?: string
+          whatsapp_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "msme_campaigns_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "msme_campaigns_whatsapp_template_id_fkey"
+            columns: ["whatsapp_template_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      msme_responses: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          form_data: Json | null
+          id: string
+          response_status: Database["public"]["Enums"]["response_status"] | null
+          submitted_at: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          form_data?: Json | null
+          id?: string
+          response_status?:
+            | Database["public"]["Enums"]["response_status"]
+            | null
+          submitted_at?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          form_data?: Json | null
+          id?: string
+          response_status?:
+            | Database["public"]["Enums"]["response_status"]
+            | null
+          submitted_at?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "msme_responses_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "msme_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "msme_responses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          business_category: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_updated_date: string | null
+          location: string | null
+          msme_category: Database["public"]["Enums"]["msme_category"] | null
+          msme_status: Database["public"]["Enums"]["msme_status"] | null
+          phone: string | null
+          registration_date: string | null
+          udyam_number: string | null
+          updated_at: string
+          vendor_code: string
+          vendor_name: string
+        }
+        Insert: {
+          business_category?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_updated_date?: string | null
+          location?: string | null
+          msme_category?: Database["public"]["Enums"]["msme_category"] | null
+          msme_status?: Database["public"]["Enums"]["msme_status"] | null
+          phone?: string | null
+          registration_date?: string | null
+          udyam_number?: string | null
+          updated_at?: string
+          vendor_code: string
+          vendor_name: string
+        }
+        Update: {
+          business_category?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_updated_date?: string | null
+          location?: string | null
+          msme_category?: Database["public"]["Enums"]["msme_category"] | null
+          msme_status?: Database["public"]["Enums"]["msme_status"] | null
+          phone?: string | null
+          registration_date?: string | null
+          udyam_number?: string | null
+          updated_at?: string
+          vendor_code?: string
+          vendor_name?: string
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +317,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      campaign_status: "Draft" | "Active" | "Completed" | "Cancelled"
+      msme_category: "Micro" | "Small" | "Medium"
+      msme_status: "MSME Certified" | "Non MSME" | "MSME Application Pending"
+      response_status: "Pending" | "Completed" | "Partial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +447,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campaign_status: ["Draft", "Active", "Completed", "Cancelled"],
+      msme_category: ["Micro", "Small", "Medium"],
+      msme_status: ["MSME Certified", "Non MSME", "MSME Application Pending"],
+      response_status: ["Pending", "Completed", "Partial"],
+    },
   },
 } as const
