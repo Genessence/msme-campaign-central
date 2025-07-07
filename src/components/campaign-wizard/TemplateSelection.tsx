@@ -86,7 +86,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
                   <p className="text-sm text-muted-foreground mb-4">
                     Create your first email template to get started
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = '/templates/email/create'}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Email Template
                   </Button>
@@ -149,7 +149,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
                   <p className="text-sm text-muted-foreground mb-4">
                     Create your first WhatsApp template to get started
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = '/templates/whatsapp/create'}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create WhatsApp Template
                   </Button>

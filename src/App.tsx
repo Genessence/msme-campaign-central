@@ -8,6 +8,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
+import Templates from "./pages/Templates";
+import CreateEmailTemplate from "./pages/CreateEmailTemplate";
+import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -75,6 +78,21 @@ const App = () => (
             <Route path="/campaigns/create" element={
               <ProtectedRoute>
                 <CreateCampaign />
+              </ProtectedRoute>
+            } />
+            <Route path="/templates" element={
+              <ProtectedRoute>
+                <Templates />
+              </ProtectedRoute>
+            } />
+            <Route path="/templates/email/create" element={
+              <ProtectedRoute>
+                <CreateEmailTemplate />
+              </ProtectedRoute>
+            } />
+            <Route path="/templates/whatsapp/create" element={
+              <ProtectedRoute>
+                <CreateWhatsAppTemplate />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
