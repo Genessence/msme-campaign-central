@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download, FileDown } from "lucide-react";
+import { Download, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { Tables } from "@/integrations/supabase/types";
@@ -16,15 +15,8 @@ type Vendor = Tables<"vendors">;
 
 export default function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [filters, setFilters] = useState({
-    search: "",
-    msmeStatus: "",
-    msmeCategory: "",
-    location: "",
-  });
   const { toast } = useToast();
 
   console.log("Vendors component rendering...");
@@ -33,38 +25,6 @@ export default function Vendors() {
     console.log("Vendors useEffect running...");
     fetchVendors();
   }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [vendors, filters]);
-
-  const applyFilters = () => {
-    let filtered = vendors;
-
-    if (filters.search) {
-      filtered = filtered.filter(vendor => 
-        vendor.vendor_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        vendor.vendor_code.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (vendor.email?.toLowerCase().includes(filters.search.toLowerCase()))
-      );
-    }
-
-    if (filters.msmeStatus) {
-      filtered = filtered.filter(vendor => vendor.msme_status === filters.msmeStatus);
-    }
-
-    if (filters.msmeCategory) {
-      filtered = filtered.filter(vendor => vendor.msme_category === filters.msmeCategory);
-    }
-
-    if (filters.location) {
-      filtered = filtered.filter(vendor => 
-        vendor.location?.toLowerCase().includes(filters.location.toLowerCase())
-      );
-    }
-
-    setFilteredVendors(filtered);
-  };
 
   const fetchVendors = async () => {
     console.log("Fetching vendors...");
@@ -145,7 +105,7 @@ export default function Vendors() {
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredVendors);
+    const worksheet = XLSX.utils.json_to_sheet(vendors);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vendors");
     XLSX.writeFile(workbook, "vendors.xlsx");
@@ -284,76 +244,15 @@ export default function Vendors() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Vendor List ({filteredVendors.length})</CardTitle>
+          <CardTitle>Vendor List ({vendors.length})</CardTitle>
           <CardDescription>
             All registered vendors in the system
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search vendors..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="msme-status">MSME Status</Label>
-              <Select
-                value={filters.msmeStatus}
-                onValueChange={(value) => setFilters({ ...filters, msmeStatus: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
-                  <SelectItem value="MSME Certified">MSME Certified</SelectItem>
-                  <SelectItem value="Non MSME">Non MSME</SelectItem>
-                  <SelectItem value="MSME Application Pending">MSME Application Pending</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="msme-category">MSME Category</Label>
-              <Select
-                value={filters.msmeCategory}
-                onValueChange={(value) => setFilters({ ...filters, msmeCategory: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  <SelectItem value="Micro">Micro</SelectItem>
-                  <SelectItem value="Small">Small</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                placeholder="Filter by location..."
-                value={filters.location}
-                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {filteredVendors.length === 0 ? (
+          {vendors.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {vendors.length === 0 
-                ? "No vendors found. Upload some vendor data to get started."
-                : "No vendors match the current filters."
-              }
+              No vendors found. Upload some vendor data to get started.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -371,7 +270,7 @@ export default function Vendors() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredVendors.map((vendor) => (
+                  {vendors.map((vendor) => (
                     <TableRow key={vendor.id}>
                       <TableCell className="font-medium">{vendor.vendor_name}</TableCell>
                       <TableCell>{vendor.vendor_code}</TableCell>
