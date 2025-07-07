@@ -318,8 +318,12 @@ export type Database = {
     }
     Enums: {
       campaign_status: "Draft" | "Active" | "Completed" | "Cancelled"
-      msme_category: "Micro" | "Small" | "Medium"
-      msme_status: "MSME Certified" | "Non MSME" | "MSME Application Pending"
+      msme_category: "Micro" | "Small" | "Medium" | "Others"
+      msme_status:
+        | "MSME Certified"
+        | "Non MSME"
+        | "MSME Application Pending"
+        | "Others"
       response_status: "Pending" | "Completed" | "Partial"
     }
     CompositeTypes: {
@@ -449,8 +453,13 @@ export const Constants = {
   public: {
     Enums: {
       campaign_status: ["Draft", "Active", "Completed", "Cancelled"],
-      msme_category: ["Micro", "Small", "Medium"],
-      msme_status: ["MSME Certified", "Non MSME", "MSME Application Pending"],
+      msme_category: ["Micro", "Small", "Medium", "Others"],
+      msme_status: [
+        "MSME Certified",
+        "Non MSME",
+        "MSME Application Pending",
+        "Others",
+      ],
       response_status: ["Pending", "Completed", "Partial"],
     },
   },
