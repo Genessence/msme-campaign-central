@@ -76,7 +76,7 @@ export default function Auth() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@msme.com"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11"
@@ -105,19 +105,6 @@ export default function Auth() {
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Demo Credentials */}
-        <Card className="bg-muted/50 border-border/30">
-          <CardContent className="pt-4">
-            <div className="text-center space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Demo Credentials</p>
-              <div className="text-sm space-y-1">
-                <p><span className="font-medium">Email:</span> admin@msme.com</p>
-                <p><span className="font-medium">Password:</span> admin123</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
