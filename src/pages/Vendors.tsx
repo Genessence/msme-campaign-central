@@ -736,52 +736,54 @@ export default function Vendors() {
                 <Table className="w-full">
                    <TableHeader>
                      <TableRow>
-                       <TableHead className="min-w-[150px]">Vendor Name</TableHead>
-                       <TableHead className="min-w-[100px]">Code</TableHead>
-                       <TableHead className="min-w-[200px]">Email</TableHead>
-                       <TableHead className="min-w-[120px]">Phone</TableHead>
-                       <TableHead className="min-w-[150px]">MSME Status</TableHead>
-                       <TableHead className="min-w-[100px]">Category</TableHead>
-                       <TableHead className="min-w-[120px]">Location</TableHead>
-                       <TableHead className="min-w-[120px]">Document</TableHead>
+                       <TableHead className="w-[120px]">Vendor Name</TableHead>
+                       <TableHead className="w-[80px]">Code</TableHead>
+                       <TableHead className="w-[140px]">Email</TableHead>
+                       <TableHead className="w-[100px]">Phone</TableHead>
+                       <TableHead className="w-[120px]">MSME Status</TableHead>
+                       <TableHead className="w-[80px]">Category</TableHead>
+                       <TableHead className="w-[100px]">Location</TableHead>
+                       <TableHead className="w-[100px]">Document</TableHead>
                      </TableRow>
                    </TableHeader>
-                    <TableBody>
-                      {vendors.map((vendor) => (
-                        <TableRow key={vendor.id}>
-                          <TableCell className="font-medium">{vendor.vendor_name}</TableCell>
-                          <TableCell>{vendor.vendor_code}</TableCell>
-                          <TableCell>{vendor.email || "—"}</TableCell>
-                          <TableCell>{vendor.phone || "—"}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(vendor.msme_status || "")}>
-                              {vendor.msme_status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {vendor.msme_category ? (
-                              <Badge className={getCategoryColor(vendor.msme_category)}>
-                                {vendor.msme_category}
-                              </Badge>
-                            ) : (
-                              "—"
-                            )}
-                          </TableCell>
-                           <TableCell>{vendor.location || "—"}</TableCell>
+                     <TableBody>
+                       {vendors.map((vendor) => (
+                         <TableRow key={vendor.id}>
+                           <TableCell className="font-medium truncate max-w-[120px]">{vendor.vendor_name}</TableCell>
+                           <TableCell className="truncate">{vendor.vendor_code}</TableCell>
+                           <TableCell className="truncate max-w-[140px]" title={vendor.email || ""}>
+                             {vendor.email || "—"}
+                           </TableCell>
+                           <TableCell className="truncate">{vendor.phone || "—"}</TableCell>
+                           <TableCell>
+                             <Badge className={`${getStatusColor(vendor.msme_status || "")} text-xs`}>
+                               {vendor.msme_status}
+                             </Badge>
+                           </TableCell>
+                           <TableCell>
+                             {vendor.msme_category ? (
+                               <Badge className={`${getCategoryColor(vendor.msme_category)} text-xs`}>
+                                 {vendor.msme_category}
+                               </Badge>
+                             ) : (
+                               "—"
+                             )}
+                           </TableCell>
+                           <TableCell className="truncate">{vendor.location || "—"}</TableCell>
                            <TableCell>
                              <Button
                                variant="outline"
                                size="sm"
                                onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
                                disabled={!vendorDocuments[vendor.id]}
+                               className="px-2"
                              >
-                               <Download className="h-4 w-4 mr-2" />
-                               Download
+                               <Download className="h-3 w-3" />
                              </Button>
                            </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
+                         </TableRow>
+                       ))}
+                     </TableBody>
                   </Table>
               </ScrollArea>
             </div>
