@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -396,61 +397,63 @@ export default function Vendors() {
               No vendors found. Upload some vendor data to get started.
             </div>
           ) : (
-            <div className="w-full overflow-x-auto border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead>Vendor Name</TableHead>
-                     <TableHead>Code</TableHead>
-                     <TableHead>Email</TableHead>
-                     <TableHead>Phone</TableHead>
-                     <TableHead>MSME Status</TableHead>
-                     <TableHead>Category</TableHead>
-                     <TableHead>Location</TableHead>
-                     <TableHead>Balance</TableHead>
-                     <TableHead>Document</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {vendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.vendor_name}</TableCell>
-                      <TableCell>{vendor.vendor_code}</TableCell>
-                      <TableCell>{vendor.email || "—"}</TableCell>
-                      <TableCell>{vendor.phone || "—"}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(vendor.msme_status || "")}>
-                          {vendor.msme_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {vendor.msme_category ? (
-                          <Badge className={getCategoryColor(vendor.msme_category)}>
-                            {vendor.msme_category}
-                          </Badge>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>{vendor.location || "—"}</TableCell>
-                      <TableCell>
-                        {vendor.closing_balance ? `₹${vendor.closing_balance.toLocaleString()}` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
-                          disabled={!vendorDocuments[vendor.id]}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      </TableCell>
+            <div className="border rounded-md">
+              <ScrollArea className="h-[600px] w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                       <TableHead className="min-w-[150px]">Vendor Name</TableHead>
+                       <TableHead className="min-w-[100px]">Code</TableHead>
+                       <TableHead className="min-w-[200px]">Email</TableHead>
+                       <TableHead className="min-w-[150px]">Phone</TableHead>
+                       <TableHead className="min-w-[180px]">MSME Status</TableHead>
+                       <TableHead className="min-w-[100px]">Category</TableHead>
+                       <TableHead className="min-w-[150px]">Location</TableHead>
+                       <TableHead className="min-w-[120px]">Balance</TableHead>
+                       <TableHead className="min-w-[120px]">Document</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {vendors.map((vendor) => (
+                      <TableRow key={vendor.id}>
+                        <TableCell className="font-medium min-w-[150px]">{vendor.vendor_name}</TableCell>
+                        <TableCell className="min-w-[100px]">{vendor.vendor_code}</TableCell>
+                        <TableCell className="min-w-[200px]">{vendor.email || "—"}</TableCell>
+                        <TableCell className="min-w-[150px]">{vendor.phone || "—"}</TableCell>
+                        <TableCell className="min-w-[180px]">
+                          <Badge className={getStatusColor(vendor.msme_status || "")}>
+                            {vendor.msme_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="min-w-[100px]">
+                          {vendor.msme_category ? (
+                            <Badge className={getCategoryColor(vendor.msme_category)}>
+                              {vendor.msme_category}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="min-w-[150px]">{vendor.location || "—"}</TableCell>
+                        <TableCell className="min-w-[120px]">
+                          {vendor.closing_balance ? `₹${vendor.closing_balance.toLocaleString()}` : "—"}
+                        </TableCell>
+                        <TableCell className="min-w-[120px]">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
+                            disabled={!vendorDocuments[vendor.id]}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </CardContent>
