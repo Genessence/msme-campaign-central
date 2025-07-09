@@ -262,23 +262,67 @@ export default function MSMEStatusUpdate() {
       } else if (data.msmeStatus === 'Non MSME') {
         // Generate PDF for Non MSME declaration
         const pdf = new jsPDF();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const currentDate = new Date();
+        const submissionDate = currentDate.toLocaleDateString();
+        const submissionTime = currentDate.toLocaleTimeString();
         
-        // Add content to PDF
-        pdf.setFontSize(18);
-        pdf.text('MSME Status Declaration', 20, 30);
+        // Header - Vendor Name (centered, large font)
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        const vendorNameWidth = pdf.getTextWidth(data.vendorName);
+        pdf.text(data.vendorName, (pageWidth - vendorNameWidth) / 2, 30);
         
+        // Title (centered, medium font)
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        const titleText = 'DECLARATION OF REGISTRATION IN NON MSME';
+        const titleWidth = pdf.getTextWidth(titleText);
+        pdf.text(titleText, (pageWidth - titleWidth) / 2, 60);
+        
+        // Body text (justified, normal font)
         pdf.setFontSize(12);
-        pdf.text(`Vendor Code: ${data.vendorCode}`, 20, 50);
-        pdf.text(`Vendor Name: ${data.vendorName}`, 20, 60);
-        pdf.text(`Business Address: ${data.businessAddress}`, 20, 70);
+        pdf.setFont('helvetica', 'normal');
+        const bodyText = `This is to certify that our company ${data.vendorName} located at ${data.businessAddress} has not registered under Micro,Small, Medium enterprises (MSME) development Act 2006 as on date of declaration.`;
         
-        pdf.setFontSize(14);
-        pdf.text('Declaration:', 20, 90);
+        // Split text into lines that fit the page width
+        const lines = pdf.splitTextToSize(bodyText, pageWidth - 40);
+        pdf.text(lines, 20, 90);
+        
+        // Calculate Y position after body text
+        const bodyEndY = 90 + (lines.length * 7);
+        
+        // Signature section
         pdf.setFontSize(12);
-        pdf.text('I confirm that our organization does not qualify for MSME certification.', 20, 105);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('For and on behalf of', 20, bodyEndY + 40);
+        pdf.text(data.vendorName, 20, bodyEndY + 50);
+        pdf.text('(Digitally Signed)', 20, bodyEndY + 60);
         
-        pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 125);
-        pdf.text(`Submitted via Amber Compliance System`, 20, 135);
+        // Footer section
+        const footerY = pageHeight - 60;
+        
+        // Vendor address (centered)
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const addressLines = pdf.splitTextToSize(data.businessAddress, pageWidth - 40);
+        const addressStartY = footerY - 20;
+        
+        addressLines.forEach((line: string, index: number) => {
+          const lineWidth = pdf.getTextWidth(line);
+          pdf.text(line, (pageWidth - lineWidth) / 2, addressStartY + (index * 5));
+        });
+        
+        // Digital signature text (centered)
+        const digitalSignText = `Document has been digitally signed with acceptance on Amber Compliance System at ${submissionTime} on ${submissionDate}`;
+        const digitalSignLines = pdf.splitTextToSize(digitalSignText, pageWidth - 40);
+        const digitalSignStartY = addressStartY + (addressLines.length * 5) + 10;
+        
+        digitalSignLines.forEach((line: string, index: number) => {
+          const lineWidth = pdf.getTextWidth(line);
+          pdf.text(line, (pageWidth - lineWidth) / 2, digitalSignStartY + (index * 5));
+        });
         
         // Convert PDF to blob and upload
         const pdfBlob = pdf.output('blob');
