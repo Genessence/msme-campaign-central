@@ -294,11 +294,92 @@ export default function Vendors() {
       // Remove processing data before inserting to database
       const vendorData = processedData.map(({ emailData, phoneData, ...vendor }) => vendor);
 
+      // Check for duplicate vendor codes within the upload
+      const vendorCodes = vendorData.map(v => v.vendor_code);
+      const duplicateCodesInFile = vendorCodes.filter((code, index) => vendorCodes.indexOf(code) !== index);
+      
+      if (duplicateCodesInFile.length > 0) {
+        toast({
+          title: "Upload Failed",
+          description: `Duplicate vendor codes found in file: ${[...new Set(duplicateCodesInFile)].join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check for existing vendor codes in database
+      const { data: existingVendors, error: checkError } = await supabase
+        .from("vendors")
+        .select("vendor_code")
+        .in("vendor_code", vendorCodes);
+
+      if (checkError) {
+        console.error("Error checking existing vendors:", checkError);
+        toast({
+          title: "Error",
+          description: "Failed to validate vendor codes",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const existingCodes = existingVendors?.map(v => v.vendor_code) || [];
+      const duplicateCodesInDB = vendorCodes.filter(code => existingCodes.includes(code));
+
+      if (duplicateCodesInDB.length > 0) {
+        toast({
+          title: "Upload Failed",
+          description: `Vendor codes already exist in database: ${duplicateCodesInDB.join(', ')}. Please use unique vendor codes.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Filter out records with empty vendor_code or vendor_name
+      const validVendorData = vendorData.filter(vendor => 
+        vendor.vendor_code && vendor.vendor_code.trim() !== '' && 
+        vendor.vendor_name && vendor.vendor_name.trim() !== ''
+      );
+
+      if (validVendorData.length === 0) {
+        toast({
+          title: "Upload Failed",
+          description: "No valid records found. Please ensure vendor_code and vendor_name are provided.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (validVendorData.length < vendorData.length) {
+        const skippedCount = vendorData.length - validVendorData.length;
+        toast({
+          title: "Warning",
+          description: `${skippedCount} records skipped due to missing vendor_code or vendor_name`,
+          variant: "destructive",
+        });
+      }
+
       const { error } = await supabase
         .from("vendors")
-        .insert(vendorData);
+        .insert(validVendorData);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        if (error.code === '23505') {
+          toast({
+            title: "Upload Failed",
+            description: "Duplicate vendor codes detected. Please ensure all vendor codes are unique.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Upload Failed",
+            description: `Database error: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
 
       // Show detailed success message with quality report
       const reportMessages = [];
@@ -326,7 +407,7 @@ export default function Vendors() {
 
       toast({
         title: "Success",
-        description: `${vendorData.length} vendors uploaded successfully${reportMessages.length > 0 ? '. ' + reportMessages.join(', ') : ''}`,
+        description: `${validVendorData.length} vendors uploaded successfully${reportMessages.length > 0 ? '. ' + reportMessages.join(', ') : ''}`,
       });
 
       fetchVendors();
