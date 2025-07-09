@@ -14,6 +14,7 @@ import { AlertCircle, CheckCircle, Upload, FileText, Building, Shield } from 'lu
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
 
 // Zod schema for form validation
 const msmeFormSchema = z.object({
@@ -234,11 +235,77 @@ export default function MSMEStatusUpdate() {
 
       if (responseError) throw responseError;
 
-      // Handle file upload if present
-      if (data.certificate && data.msmeStatus === 'MSME Certified') {
-        // Note: For file upload, you might want to set up Supabase Storage
-        // This is a placeholder for the file upload logic
-        console.log('File upload would happen here:', data.certificate);
+      // Handle file upload and storage
+      let fileName = '';
+      if (data.msmeStatus === 'MSME Certified' && data.certificate) {
+        // Upload certificate file with naming convention
+        const fileExtension = data.certificate.name.split('.').pop();
+        fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}.${fileExtension}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('msme-documents')
+          .upload(fileName, data.certificate, {
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('File upload error:', uploadError);
+          throw new Error('Failed to upload certificate');
+        }
+      } else if (data.msmeStatus === 'Non MSME') {
+        // Generate PDF for Non MSME declaration
+        const pdf = new jsPDF();
+        
+        // Add content to PDF
+        pdf.setFontSize(18);
+        pdf.text('MSME Status Declaration', 20, 30);
+        
+        pdf.setFontSize(12);
+        pdf.text(`Vendor Code: ${data.vendorCode}`, 20, 50);
+        pdf.text(`Vendor Name: ${data.vendorName}`, 20, 60);
+        pdf.text(`Business Address: ${data.businessAddress}`, 20, 70);
+        
+        pdf.setFontSize(14);
+        pdf.text('Declaration:', 20, 90);
+        pdf.setFontSize(12);
+        pdf.text('I confirm that our organization does not qualify for MSME certification.', 20, 105);
+        
+        pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 125);
+        pdf.text(`Submitted via Amber Compliance System`, 20, 135);
+        
+        // Convert PDF to blob and upload
+        const pdfBlob = pdf.output('blob');
+        fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}_Declaration.pdf`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('msme-documents')
+          .upload(fileName, pdfBlob, {
+            upsert: true,
+            contentType: 'application/pdf'
+          });
+
+        if (uploadError) {
+          console.error('PDF upload error:', uploadError);
+          throw new Error('Failed to upload declaration PDF');
+        }
+      }
+
+      // Store file reference in document_uploads table
+      if (fileName) {
+        const { error: docError } = await supabase
+          .from('document_uploads')
+          .insert([{
+            vendor_id: vendorId,
+            file_name: fileName,
+            file_path: `msme-documents/${fileName}`,
+            file_type: data.msmeStatus === 'MSME Certified' ? data.certificate?.type || 'application/pdf' : 'application/pdf',
+            file_size: data.msmeStatus === 'MSME Certified' ? data.certificate?.size || 0 : 0
+          }]);
+
+        if (docError) {
+          console.error('Document record error:', docError);
+          // Don't throw here as the main data is already saved
+        }
       }
 
       clearInterval(progressInterval);

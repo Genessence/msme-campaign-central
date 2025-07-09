@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 import { Tables } from "@/integrations/supabase/types";
 
 type Vendor = Tables<"vendors">;
@@ -144,12 +145,75 @@ export default function Vendors() {
     });
   };
 
-  const downloadAttachments = () => {
-    // Dummy function for now
-    toast({
-      title: "Download Started",
-      description: "Vendor attachments download will be implemented soon",
-    });
+  const downloadAttachments = async () => {
+    try {
+      toast({
+        title: "Download Started",
+        description: "Preparing files for download...",
+      });
+
+      // Fetch all document uploads
+      const { data: documents, error: docError } = await supabase
+        .from('document_uploads')
+        .select('*');
+
+      if (docError) throw docError;
+
+      if (!documents || documents.length === 0) {
+        toast({
+          title: "No Files Found",
+          description: "No MSME documents available for download",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const zip = new JSZip();
+
+      // Download each file and add to zip
+      for (const doc of documents) {
+        try {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('msme-documents')
+            .download(doc.file_name);
+
+          if (downloadError) {
+            console.error(`Error downloading ${doc.file_name}:`, downloadError);
+            continue; // Skip this file and continue with others
+          }
+
+          if (fileData) {
+            zip.file(doc.file_name, fileData);
+          }
+        } catch (error) {
+          console.error(`Error processing ${doc.file_name}:`, error);
+        }
+      }
+
+      // Generate and download the zip file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `MSME_Documents_${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Complete",
+        description: `Downloaded ${documents.length} files successfully`,
+      });
+
+    } catch (error) {
+      console.error('Error downloading attachments:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download vendor files",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
