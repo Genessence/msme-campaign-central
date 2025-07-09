@@ -16,6 +16,7 @@ import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
 import EditWhatsAppTemplate from "./pages/EditWhatsAppTemplate";
 import ChangePassword from "./pages/ChangePassword";
 import MSMEStatusUpdate from "./pages/MSMEStatusUpdate";
+import Analytics from "./pages/Analytics";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -118,6 +119,11 @@ const App = () => (
             <Route path="/change-password" element={
               <ProtectedRoute>
                 <ChangePassword />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             } />
             <Route path="/msme-update" element={<MSMEStatusUpdate />} />
