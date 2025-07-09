@@ -18,6 +18,7 @@ export default function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [vendorDocuments, setVendorDocuments] = useState<Record<string, any>>({});
   const { toast } = useToast();
 
   console.log("Vendors component rendering...");
@@ -26,6 +27,28 @@ export default function Vendors() {
     console.log("Vendors useEffect running...");
     fetchVendors();
   }, []);
+
+  const fetchVendorDocuments = async () => {
+    try {
+      const { data: documents, error } = await supabase
+        .from('document_uploads')
+        .select('*');
+
+      if (error) throw error;
+
+      // Create a mapping of vendor_id to document
+      const docMap: Record<string, any> = {};
+      documents?.forEach(doc => {
+        if (doc.vendor_id) {
+          docMap[doc.vendor_id] = doc;
+        }
+      });
+
+      setVendorDocuments(docMap);
+    } catch (error) {
+      console.error("Error fetching vendor documents:", error);
+    }
+  };
 
   const fetchVendors = async () => {
     console.log("Fetching vendors...");
@@ -39,6 +62,9 @@ export default function Vendors() {
 
       if (error) throw error;
       setVendors(data || []);
+      
+      // Fetch vendor documents after vendors are loaded
+      await fetchVendorDocuments();
     } catch (error) {
       console.error("Error fetching vendors:", error);
       toast({
@@ -216,6 +242,57 @@ export default function Vendors() {
     }
   };
 
+  const downloadVendorDocument = async (vendorId: string, vendorName: string) => {
+    try {
+      const document = vendorDocuments[vendorId];
+      if (!document) {
+        toast({
+          title: "No Document Found",
+          description: "No document available for this vendor",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('msme-documents')
+        .download(document.file_name);
+
+      if (downloadError) {
+        console.error(`Error downloading ${document.file_name}:`, downloadError);
+        toast({
+          title: "Download Failed",
+          description: "Failed to download document",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (fileData) {
+        const url = URL.createObjectURL(fileData);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${vendorName}_${document.file_name}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "Download Complete",
+          description: `Document downloaded successfully for ${vendorName}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error downloading vendor document:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download vendor document",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "MSME Certified":
@@ -323,14 +400,15 @@ export default function Vendors() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vendor Name</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>MSME Status</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Balance</TableHead>
+                     <TableHead>Vendor Name</TableHead>
+                     <TableHead>Code</TableHead>
+                     <TableHead>Email</TableHead>
+                     <TableHead>Phone</TableHead>
+                     <TableHead>MSME Status</TableHead>
+                     <TableHead>Category</TableHead>
+                     <TableHead>Location</TableHead>
+                     <TableHead>Balance</TableHead>
+                     <TableHead>Document</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -357,6 +435,17 @@ export default function Vendors() {
                       <TableCell>{vendor.location || "—"}</TableCell>
                       <TableCell>
                         {vendor.closing_balance ? `₹${vendor.closing_balance.toLocaleString()}` : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
+                          disabled={!vendorDocuments[vendor.id]}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
