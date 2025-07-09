@@ -161,28 +161,78 @@ export default function Vendors() {
   };
 
   const extractValidMobileNumbers = (phoneString: string): { primary: string; all: string[]; landlines: string[]; invalid: string[] } => {
+    console.log("Processing phone string:", phoneString);
+    
     if (!phoneString || typeof phoneString !== 'string') {
       return { primary: "", all: [], landlines: [], invalid: [] };
     }
 
+    // Split by various separators and clean each number
     const separators = /[,;|\s]+/;
     const phones = phoneString.split(separators)
-      .map(phone => phone.trim())
+      .map(phone => {
+        // Clean the phone number
+        let cleaned = phone.trim();
+        
+        // Handle country code formats like "91-9810004756"
+        if (cleaned.match(/^\d{2}-\d+$/)) {
+          cleaned = '+' + cleaned.replace('-', '');
+        }
+        
+        // Remove spaces, dashes, parentheses, dots
+        cleaned = cleaned.replace(/[\s\-\(\)\.]/g, '');
+        
+        return cleaned;
+      })
       .filter(phone => phone.length > 0);
+
+    console.log("Cleaned phone numbers:", phones);
 
     const mobiles: string[] = [];
     const landlines: string[] = [];
     const invalid: string[] = [];
 
     phones.forEach(phone => {
-      if (isValidMobileNumber(phone)) {
-        mobiles.push(phone);
-      } else if (isLandlineNumber(phone)) {
+      console.log(`Checking phone: "${phone}"`);
+      
+      // More lenient validation - accept numbers that look like mobile numbers
+      const cleanDigits = phone.replace(/[^\d]/g, '');
+      
+      // Skip numbers that are clearly landlines (starting with 0 and area codes)
+      if (phone.match(/^0\d{2,4}-\d+$/)) {
+        console.log(`Landline detected: ${phone}`);
         landlines.push(phone);
+        return;
+      }
+      
+      // Accept numbers that are likely mobile:
+      // - 10 digits starting with 6-9 (Indian mobile)
+      // - 11 digits starting with 8 (some carriers)
+      // - International format starting with +
+      if (
+        (cleanDigits.length === 10 && /^[6-9]/.test(cleanDigits)) ||
+        (cleanDigits.length === 11 && /^[8]/.test(cleanDigits)) ||
+        (phone.startsWith('+') && cleanDigits.length >= 10 && cleanDigits.length <= 15)
+      ) {
+        console.log(`Mobile number accepted: ${phone}`);
+        mobiles.push(phone);
+      } else if (cleanDigits.length >= 6 && cleanDigits.length <= 15) {
+        // For other numbers, use basic validation
+        const uniqueDigits = new Set(cleanDigits).size;
+        if (uniqueDigits >= 2) {
+          console.log(`Generic mobile accepted: ${phone}`);
+          mobiles.push(phone);
+        } else {
+          console.log(`Invalid (not enough unique digits): ${phone}`);
+          invalid.push(phone);
+        }
       } else {
+        console.log(`Invalid (wrong length): ${phone}`);
         invalid.push(phone);
       }
     });
+
+    console.log("Final result:", { mobiles, landlines, invalid });
 
     return {
       primary: mobiles[0] || "",
@@ -238,8 +288,10 @@ export default function Vendors() {
       setUploadStatus('Processing and validating data...');
       
       const processedData = jsonData.map((row: any) => {
+        console.log("Processing row:", row);
         const emailData = extractValidEmails(row.email || "");
         const phoneData = extractValidMobileNumbers(row.phone || "");
+        console.log("Phone data result:", phoneData);
 
         return {
           vendor_name: row.vendor_name || row.name || "",
