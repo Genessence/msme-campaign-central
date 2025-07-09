@@ -116,67 +116,28 @@ export default function Vendors() {
   };
 
   const isValidMobileNumber = (phoneNumber: string): boolean => {
+    if (!phoneNumber || typeof phoneNumber !== 'string') return false;
+    
     // Remove all non-digit characters except +
     const cleaned = phoneNumber.replace(/[^\d+]/g, '');
     
-    // International mobile patterns
-    const mobilePatterns = [
-      /^\+1[2-9]\d{9}$/,        // US/Canada mobile
-      /^\+44[7-9]\d{9}$/,       // UK mobile
-      /^\+91[6-9]\d{9}$/,       // India mobile
-      /^\+86[1][3-9]\d{9}$/,    // China mobile
-      /^\+81[7-9]\d{9}$/,       // Japan mobile
-      /^\+49[1][5-7]\d{9}$/,    // Germany mobile
-      /^\+33[6-7]\d{8}$/,       // France mobile
-      /^\+39[3][0-9]\d{8}$/,    // Italy mobile
-      /^\+61[4-5]\d{8}$/,       // Australia mobile
-      /^\+55[1-9][1-9]\d{8}$/,  // Brazil mobile
-      /^\+7[9]\d{9}$/,          // Russia mobile
-      /^\+34[6-7]\d{8}$/,       // Spain mobile
-      /^\+31[6]\d{8}$/,         // Netherlands mobile
-      /^\+41[7-8]\d{8}$/,       // Switzerland mobile
-      /^\+46[7]\d{8}$/,         // Sweden mobile
-      /^\+47[4-9]\d{7}$/,       // Norway mobile
-      /^\+45[2-9]\d{7}$/,       // Denmark mobile
-      /^\+358[4-5]\d{8}$/,      // Finland mobile
-      /^\+852[5-9]\d{7}$/,      // Hong Kong mobile
-      /^\+65[8-9]\d{7}$/,       // Singapore mobile
-      /^\+971[5]\d{8}$/,        // UAE mobile
-      /^\+966[5]\d{8}$/,        // Saudi Arabia mobile
-      /^\+60[1][0-9]\d{7}$/,    // Malaysia mobile
-      /^\+66[8-9]\d{8}$/,       // Thailand mobile
-      /^\+84[3-9]\d{8}$/,       // Vietnam mobile
-      /^\+62[8]\d{8,11}$/,      // Indonesia mobile
-      /^\+63[9]\d{9}$/,         // Philippines mobile
-      /^\+82[1][0-9]\d{8}$/,    // South Korea mobile
-      /^\+886[9]\d{8}$/,        // Taiwan mobile
-      /^\+234[7-9]\d{9}$/,      // Nigeria mobile
-      /^\+27[6-8]\d{8}$/,       // South Africa mobile
-      /^\+20[1][0-2]\d{8}$/,    // Egypt mobile
-      /^\+212[6-7]\d{8}$/,      // Morocco mobile
-      /^\+54[9][1-9]\d{8}$/,    // Argentina mobile
-      /^\+52[1][0-9]\d{9}$/,    // Mexico mobile
-      /^\+57[3]\d{9}$/,         // Colombia mobile
-      /^\+56[9]\d{8}$/,         // Chile mobile
-      /^\+51[9]\d{8}$/,         // Peru mobile
-    ];
-
-    // Check if number matches any mobile pattern
-    const isInternationalMobile = mobilePatterns.some(pattern => pattern.test(cleaned));
+    // Basic validation: must have digits
+    if (!/\d/.test(cleaned)) return false;
     
-    // For numbers without country code, check if it's a valid local mobile
-    if (!cleaned.startsWith('+') && cleaned.length >= 10 && cleaned.length <= 15) {
-      // Local mobile patterns (without country code)
-      const localMobilePatterns = [
-        /^[6-9]\d{9}$/, // India
-        /^[1-9]\d{9}$/, // Generic 10-digit starting with 1-9
-        /^[4-9]\d{9}$/  // Many countries use 4-9 for mobile
-      ];
-      
-      return localMobilePatterns.some(pattern => pattern.test(cleaned));
+    // If it starts with +, it should be international format
+    if (cleaned.startsWith('+')) {
+      // International: should be 7-15 digits after country code
+      return cleaned.length >= 7 && cleaned.length <= 15;
     }
-
-    return isInternationalMobile;
+    
+    // Local format: should be 6-15 digits
+    if (cleaned.length >= 6 && cleaned.length <= 15) {
+      // Avoid numbers that are clearly invalid (all same digit, etc.)
+      const uniqueDigits = new Set(cleaned).size;
+      return uniqueDigits >= 2; // At least 2 different digits
+    }
+    
+    return false;
   };
 
   const isLandlineNumber = (phoneNumber: string): boolean => {
@@ -624,6 +585,35 @@ export default function Vendors() {
     }
   };
 
+  const deleteAllVendors = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL vendors? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "All vendors deleted successfully",
+      });
+
+      setVendors([]);
+    } catch (error) {
+      console.error("Error deleting vendors:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete vendors",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "MSME":
@@ -681,6 +671,9 @@ export default function Vendors() {
           <Button onClick={exportToExcel} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export to Excel
+          </Button>
+          <Button onClick={deleteAllVendors} variant="destructive">
+            Delete All Vendors
           </Button>
         </div>
       </div>
