@@ -2,9 +2,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { data: metrics, isLoading } = useDashboardMetrics();
 
   return (
     <div className="space-y-6">
@@ -15,8 +17,12 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">No vendors added yet</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : metrics?.totalVendors}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {metrics?.totalVendors === 0 ? 'No vendors added yet' : 'Total registered vendors'}
+            </p>
           </CardContent>
         </Card>
         
@@ -25,18 +31,29 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">No active campaigns</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : metrics?.activeCampaigns}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {metrics?.activeCampaigns === 0 ? 'No active campaigns' : 'Currently running campaigns'}
+            </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">MSME Certified</CardTitle>
+            <CardTitle className="text-sm font-medium">No. of MSMEs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">0% of total vendors</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : metrics?.msmeCount}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {metrics?.totalVendors && metrics?.totalVendors > 0 
+                ? `${Math.round((metrics?.msmeCount || 0) / metrics.totalVendors * 100)}% of total vendors`
+                : 'No MSME vendors yet'
+              }
+            </p>
           </CardContent>
         </Card>
         
@@ -45,8 +62,12 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium">Pending Responses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">No pending responses</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : metrics?.pendingResponses}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {metrics?.pendingResponses === 0 ? 'No pending responses' : 'Awaiting MSME form submissions'}
+            </p>
           </CardContent>
         </Card>
       </div>
