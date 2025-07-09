@@ -342,7 +342,7 @@ export default function Vendors() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Vendors</h1>
@@ -409,8 +409,8 @@ export default function Vendors() {
             </div>
           ) : (
             <div className="border rounded-md overflow-hidden">
-              <ScrollArea className="h-[600px] w-full">
-                <div className="min-w-[1000px]">
+              <ScrollArea className="h-[600px] max-w-full">
+                <div className="w-[800px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
