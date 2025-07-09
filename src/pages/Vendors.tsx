@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Download, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
@@ -19,6 +20,8 @@ export default function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [vendorDocuments, setVendorDocuments] = useState<Record<string, any>>({});
   const { toast } = useToast();
 
@@ -258,13 +261,21 @@ export default function Vendors() {
     if (!file) return;
 
     setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus('Reading file...');
+    
     try {
+      // Stage 1: Reading file (20%)
+      setUploadProgress(20);
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Process and validate data
+      // Stage 2: Processing data (40%)
+      setUploadProgress(40);
+      setUploadStatus('Processing and validating data...');
+      
       const processedData = jsonData.map((row: any) => {
         const emailData = extractValidEmails(row.email || "");
         const phoneData = extractValidMobileNumbers(row.phone || "");
@@ -294,6 +305,10 @@ export default function Vendors() {
       // Remove processing data before inserting to database
       const vendorData = processedData.map(({ emailData, phoneData, ...vendor }) => vendor);
 
+      // Stage 3: Validating duplicates (60%)
+      setUploadProgress(60);
+      setUploadStatus('Checking for duplicates...');
+      
       // Check for duplicate vendor codes within the upload
       const vendorCodes = vendorData.map(v => v.vendor_code);
       const duplicateCodesInFile = vendorCodes.filter((code, index) => vendorCodes.indexOf(code) !== index);
@@ -335,6 +350,10 @@ export default function Vendors() {
         return;
       }
 
+      // Stage 4: Final validation (80%)
+      setUploadProgress(80);
+      setUploadStatus('Finalizing data...');
+      
       // Filter out records with empty vendor_code or vendor_name
       const validVendorData = vendorData.filter(vendor => 
         vendor.vendor_code && vendor.vendor_code.trim() !== '' && 
@@ -359,6 +378,10 @@ export default function Vendors() {
         });
       }
 
+      // Stage 5: Saving to database (100%)
+      setUploadProgress(95);
+      setUploadStatus('Saving to database...');
+      
       const { error } = await supabase
         .from("vendors")
         .insert(validVendorData);
@@ -380,6 +403,9 @@ export default function Vendors() {
         }
         return;
       }
+
+      setUploadProgress(100);
+      setUploadStatus('Upload completed!');
 
       // Show detailed success message with quality report
       const reportMessages = [];
@@ -419,7 +445,11 @@ export default function Vendors() {
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      setTimeout(() => {
+        setUploading(false);
+        setUploadProgress(0);
+        setUploadStatus('');
+      }, 1000);
       // Reset file input
       event.target.value = "";
     }
@@ -676,8 +706,12 @@ export default function Vendors() {
               />
             </div>
             {uploading && (
-              <div className="text-sm text-muted-foreground">
-                Uploading vendors...
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{uploadStatus}</span>
+                  <span className="text-muted-foreground">{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="w-full h-2" />
               </div>
             )}
           </div>
