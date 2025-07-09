@@ -200,12 +200,13 @@ export default function Vendors() {
       // Download each file and add to zip
       for (const doc of documents) {
         try {
+          const filePath = doc.file_path || doc.file_name;
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('msme-documents')
-            .download(doc.file_name);
+            .download(filePath);
 
           if (downloadError) {
-            console.error(`Error downloading ${doc.file_name}:`, downloadError);
+            console.error(`Error downloading ${filePath}:`, downloadError);
             continue; // Skip this file and continue with others
           }
 
@@ -259,13 +260,16 @@ export default function Vendors() {
         return;
       }
 
-      console.log('Attempting to download file from storage:', document.file_name);
+      // Use file_path instead of file_name for the actual storage path
+      const filePath = document.file_path || document.file_name;
+      console.log('Attempting to download file from storage:', filePath);
+      
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('msme-documents')
-        .download(document.file_name);
+        .download(filePath);
 
       if (downloadError) {
-        console.error(`Error downloading ${document.file_name}:`, downloadError);
+        console.error(`Error downloading ${filePath}:`, downloadError);
         toast({
           title: "Download Failed",
           description: `Failed to download document: ${downloadError.message}`,
@@ -279,6 +283,7 @@ export default function Vendors() {
         const url = URL.createObjectURL(fileData);
         const link = document.createElement('a');
         link.href = url;
+        // Use the original file name for the download
         link.download = `${vendorName}_${document.file_name}`;
         document.body.appendChild(link);
         link.click();
