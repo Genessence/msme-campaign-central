@@ -258,10 +258,12 @@ export default function Vendors() {
         return;
       }
 
-      console.log('Attempting to download file from path:', document.file_path);
+      // Remove bucket prefix from file_path if it exists
+      const filePath = document.file_path.replace('msme-documents/', '');
+      console.log('Attempting to download file from path:', filePath);
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('msme-documents')
-        .download(document.file_path);
+        .download(filePath);
 
       if (downloadError) {
         console.error(`Error downloading ${document.file_path}:`, downloadError);
