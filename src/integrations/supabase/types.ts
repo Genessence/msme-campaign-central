@@ -339,6 +339,7 @@ export type Database = {
         | "Non MSME"
         | "MSME Application Pending"
         | "Others"
+        | "MSME"
       response_status: "Pending" | "Completed" | "Partial"
     }
     CompositeTypes: {
@@ -474,6 +475,7 @@ export const Constants = {
         "Non MSME",
         "MSME Application Pending",
         "Others",
+        "MSME",
       ],
       response_status: ["Pending", "Completed", "Partial"],
     },
