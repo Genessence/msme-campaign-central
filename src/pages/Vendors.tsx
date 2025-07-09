@@ -734,16 +734,16 @@ export default function Vendors() {
             <div className="border rounded-md overflow-hidden">
               <ScrollArea className="h-[600px] w-full">
                 <Table className="w-full">
-                   <TableHeader>
-                     <TableRow>
-                       <TableHead className="w-[120px]">Vendor Name</TableHead>
-                       <TableHead className="w-[80px]">Code</TableHead>
-                       <TableHead className="w-[140px]">Email</TableHead>
-                       <TableHead className="w-[100px]">Phone</TableHead>
-                       <TableHead className="w-[120px]">MSME Status</TableHead>
-                       <TableHead className="w-[80px]">Category</TableHead>
-                       <TableHead className="w-[100px]">Location</TableHead>
-                       <TableHead className="w-[100px]">Document</TableHead>
+                   <TableHeader className="sticky top-0 bg-background z-10">
+                     <TableRow className="bg-muted/50">
+                       <TableHead className="w-[120px] sticky top-0 bg-background border-b">Vendor Name</TableHead>
+                       <TableHead className="w-[80px] sticky top-0 bg-background border-b">Code</TableHead>
+                       <TableHead className="w-[140px] sticky top-0 bg-background border-b">Email</TableHead>
+                       <TableHead className="w-[100px] sticky top-0 bg-background border-b">Phone</TableHead>
+                       <TableHead className="w-[120px] sticky top-0 bg-background border-b">MSME Status</TableHead>
+                       <TableHead className="w-[80px] sticky top-0 bg-background border-b">Category</TableHead>
+                       <TableHead className="w-[100px] sticky top-0 bg-background border-b">Location</TableHead>
+                       <TableHead className="w-[100px] sticky top-0 bg-background border-b">Document</TableHead>
                      </TableRow>
                    </TableHeader>
                      <TableBody>
