@@ -410,7 +410,7 @@ export default function Vendors() {
           ) : (
             <div className="border rounded-md overflow-hidden">
               <ScrollArea className="h-[600px] max-w-full">
-                <div className="w-[800px]">
+                <div className="w-[1200px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
