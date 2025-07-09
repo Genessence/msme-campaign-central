@@ -200,13 +200,12 @@ export default function Vendors() {
       // Download each file and add to zip
       for (const doc of documents) {
         try {
-          const filePath = doc.file_path || doc.file_name;
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('msme-documents')
-            .download(filePath);
+            .download(doc.file_name);
 
           if (downloadError) {
-            console.error(`Error downloading ${filePath}:`, downloadError);
+            console.error(`Error downloading ${doc.file_name}:`, downloadError);
             continue; // Skip this file and continue with others
           }
 
@@ -246,12 +245,8 @@ export default function Vendors() {
 
   const downloadVendorDocument = async (vendorId: string, vendorName: string) => {
     try {
-      console.log('Downloading document for vendor:', vendorId, vendorName);
       const document = vendorDocuments[vendorId];
-      console.log('Document found:', document);
-      
       if (!document) {
-        console.log('No document found for vendor:', vendorId);
         toast({
           title: "No Document Found",
           description: "No document available for this vendor",
@@ -260,30 +255,24 @@ export default function Vendors() {
         return;
       }
 
-      // Use file_path instead of file_name for the actual storage path
-      const filePath = document.file_path || document.file_name;
-      console.log('Attempting to download file from storage:', filePath);
-      
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('msme-documents')
-        .download(filePath);
+        .download(document.file_name);
 
       if (downloadError) {
-        console.error(`Error downloading ${filePath}:`, downloadError);
+        console.error(`Error downloading ${document.file_name}:`, downloadError);
         toast({
           title: "Download Failed",
-          description: `Failed to download document: ${downloadError.message}`,
+          description: "Failed to download document",
           variant: "destructive",
         });
         return;
       }
 
       if (fileData) {
-        console.log('File data received, creating download link');
         const url = URL.createObjectURL(fileData);
         const link = document.createElement('a');
         link.href = url;
-        // Use the original file name for the download
         link.download = `${vendorName}_${document.file_name}`;
         document.body.appendChild(link);
         link.click();
@@ -293,13 +282,6 @@ export default function Vendors() {
         toast({
           title: "Download Complete",
           description: `Document downloaded successfully for ${vendorName}`,
-        });
-      } else {
-        console.log('No file data received');
-        toast({
-          title: "Download Failed",
-          description: "No file data received",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -349,26 +331,26 @@ export default function Vendors() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-full overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold tracking-tight truncate">Vendors</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Vendors</h1>
           <p className="text-muted-foreground">
             Manage your vendor database, upload new vendors, and export data.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          <Button onClick={downloadTemplate} variant="outline" size="sm">
+        <div className="flex gap-2">
+          <Button onClick={downloadTemplate} variant="outline">
             <FileDown className="h-4 w-4 mr-2" />
-            Template
+            Download Template
           </Button>
-          <Button onClick={downloadAttachments} variant="outline" size="sm">
+          <Button onClick={downloadAttachments} variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            All Files
+            Download Files
           </Button>
-          <Button onClick={exportToExcel} variant="outline" size="sm">
+          <Button onClick={exportToExcel} variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export to Excel
           </Button>
         </div>
       </div>
