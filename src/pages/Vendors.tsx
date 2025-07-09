@@ -342,7 +342,7 @@ export default function Vendors() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 max-w-full">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Vendors</h1>
@@ -410,21 +410,20 @@ export default function Vendors() {
           ) : (
             <div className="border rounded-md overflow-hidden">
               <ScrollArea className="h-[600px] w-full">
-                <div className="w-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                         <TableHead className="w-auto">Vendor Name</TableHead>
-                         <TableHead className="w-auto">Code</TableHead>
-                         <TableHead className="w-auto">Email</TableHead>
-                         <TableHead className="w-auto">Phone</TableHead>
-                         <TableHead className="w-auto">MSME Status</TableHead>
-                         <TableHead className="w-auto">Category</TableHead>
-                         <TableHead className="w-auto">Location</TableHead>
-                         <TableHead className="w-auto">Balance</TableHead>
-                         <TableHead className="w-auto">Document</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[150px]">Vendor Name</TableHead>
+                      <TableHead className="min-w-[100px]">Code</TableHead>
+                      <TableHead className="min-w-[200px]">Email</TableHead>
+                      <TableHead className="min-w-[120px]">Phone</TableHead>
+                      <TableHead className="min-w-[150px]">MSME Status</TableHead>
+                      <TableHead className="min-w-[100px]">Category</TableHead>
+                      <TableHead className="min-w-[120px]">Location</TableHead>
+                      <TableHead className="min-w-[120px]">Balance</TableHead>
+                      <TableHead className="min-w-[120px]">Document</TableHead>
+                    </TableRow>
+                  </TableHeader>
                     <TableBody>
                       {vendors.map((vendor) => (
                         <TableRow key={vendor.id}>
@@ -465,7 +464,6 @@ export default function Vendors() {
                       ))}
                     </TableBody>
                   </Table>
-                </div>
               </ScrollArea>
             </div>
           )}
