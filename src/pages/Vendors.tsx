@@ -31,11 +31,14 @@ export default function Vendors() {
 
   const fetchVendorDocuments = async () => {
     try {
+      console.log("Fetching vendor documents...");
       const { data: documents, error } = await supabase
         .from('document_uploads')
         .select('*');
 
       if (error) throw error;
+
+      console.log("Documents fetched:", documents);
 
       // Create a mapping of vendor_id to document
       const docMap: Record<string, any> = {};
@@ -45,6 +48,7 @@ export default function Vendors() {
         }
       });
 
+      console.log("Document mapping created:", docMap);
       setVendorDocuments(docMap);
     } catch (error) {
       console.error("Error fetching vendor documents:", error);
