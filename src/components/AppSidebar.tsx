@@ -30,7 +30,7 @@ const mainItems = [
 ];
 
 const settingsItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Change Password", url: "/change-password", icon: Settings },
 ];
 
 export function AppSidebar() {

@@ -73,9 +73,15 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
         <div className="space-y-8">
           {/* Email Templates */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Mail className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">Email Template</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Mail className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-medium">Email Template</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/templates/email/create'}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New
+              </Button>
             </div>
             
             {emailTemplates.length === 0 ? (
@@ -136,9 +142,15 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
 
           {/* WhatsApp Templates */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <MessageCircle className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-medium">WhatsApp Template</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                <h3 className="text-lg font-medium">WhatsApp Template</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/templates/whatsapp/create'}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New
+              </Button>
             </div>
             
             {whatsappTemplates.length === 0 ? (

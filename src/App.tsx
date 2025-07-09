@@ -14,6 +14,7 @@ import CreateEmailTemplate from "./pages/CreateEmailTemplate";
 import EditEmailTemplate from "./pages/EditEmailTemplate";
 import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
 import EditWhatsAppTemplate from "./pages/EditWhatsAppTemplate";
+import ChangePassword from "./pages/ChangePassword";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -111,6 +112,11 @@ const App = () => (
             <Route path="/templates/whatsapp/edit/:id" element={
               <ProtectedRoute>
                 <EditWhatsAppTemplate />
+              </ProtectedRoute>
+            } />
+            <Route path="/change-password" element={
+              <ProtectedRoute>
+                <ChangePassword />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

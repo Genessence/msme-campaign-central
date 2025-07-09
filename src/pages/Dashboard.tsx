@@ -1,8 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
@@ -58,21 +61,32 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button className="h-auto p-6 flex flex-col items-center space-y-2">
+            <Button 
+              className="h-auto p-6 flex flex-col items-center space-y-2"
+              onClick={() => navigate('/campaigns/create')}
+            >
               <div className="text-lg font-semibold">Create Campaign</div>
               <div className="text-sm text-center text-muted-foreground">
                 Start a new MSME status update campaign
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-6 flex flex-col items-center space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-6 flex flex-col items-center space-y-2"
+              onClick={() => navigate('/vendors')}
+            >
               <div className="text-lg font-semibold">Manage Vendors</div>
               <div className="text-sm text-center text-muted-foreground">
                 Add, edit, or import vendor information
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-6 flex flex-col items-center space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-6 flex flex-col items-center space-y-2"
+              onClick={() => navigate('/analytics')}
+            >
               <div className="text-lg font-semibold">View Analytics</div>
               <div className="text-sm text-center text-muted-foreground">
                 Track campaign performance and compliance
