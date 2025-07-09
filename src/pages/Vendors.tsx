@@ -285,7 +285,7 @@ export default function Vendors() {
           vendor_code: row.vendor_code || row.code || "",
           email: emailData.primary,
           phone: phoneData.primary,
-          msme_status: row.msme_status || "MSME Application Pending",
+          msme_status: row.msme_status || "Others",
           msme_category: row.msme_category || null,
           business_category: row.business_category || null,
           location: row.location || null,
@@ -473,7 +473,7 @@ export default function Vendors() {
       vendor_code: "EV001",
       email: "vendor@example.com",
       phone: "+919876543210",
-      msme_status: "MSME Certified",
+      msme_status: "MSME",
       msme_category: "Small",
       business_category: "Manufacturing",
       location: "Mumbai",
@@ -626,11 +626,11 @@ export default function Vendors() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "MSME Certified":
+      case "MSME":
         return "bg-green-50 text-green-700 border-green-200";
       case "Non MSME":
         return "bg-red-50 text-red-700 border-red-200";
-      case "MSME Application Pending":
+      case "Others":
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
       default:
         return "bg-muted text-muted-foreground border-border";
