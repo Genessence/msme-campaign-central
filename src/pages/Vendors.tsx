@@ -396,7 +396,7 @@ export default function Vendors() {
               No vendors found. Upload some vendor data to get started.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="w-full overflow-x-auto border rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow>
