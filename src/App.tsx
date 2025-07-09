@@ -15,6 +15,7 @@ import EditEmailTemplate from "./pages/EditEmailTemplate";
 import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
 import EditWhatsAppTemplate from "./pages/EditWhatsAppTemplate";
 import ChangePassword from "./pages/ChangePassword";
+import MSMEStatusUpdate from "./pages/MSMEStatusUpdate";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 
@@ -119,6 +120,7 @@ const App = () => (
                 <ChangePassword />
               </ProtectedRoute>
             } />
+            <Route path="/msme-update" element={<MSMEStatusUpdate />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
