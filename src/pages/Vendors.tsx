@@ -245,7 +245,10 @@ export default function Vendors() {
 
   const downloadVendorDocument = async (vendorId: string, vendorName: string) => {
     try {
+      console.log('Download requested for vendor:', vendorId, vendorName);
       const document = vendorDocuments[vendorId];
+      console.log('Document found:', document);
+      
       if (!document) {
         toast({
           title: "No Document Found",
@@ -255,21 +258,23 @@ export default function Vendors() {
         return;
       }
 
+      console.log('Attempting to download file from path:', document.file_path);
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('msme-documents')
-        .download(document.file_name);
+        .download(document.file_path);
 
       if (downloadError) {
-        console.error(`Error downloading ${document.file_name}:`, downloadError);
+        console.error(`Error downloading ${document.file_path}:`, downloadError);
         toast({
           title: "Download Failed",
-          description: "Failed to download document",
+          description: `Failed to download document: ${downloadError.message}`,
           variant: "destructive",
         });
         return;
       }
 
       if (fileData) {
+        console.log('File data received, creating download link');
         const url = URL.createObjectURL(fileData);
         const link = document.createElement('a');
         link.href = url;
