@@ -94,7 +94,7 @@ export default function ChangePassword() {
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <div className="space-y-8">
-        <div className="flex flex-col space-y-4">
+        <div className="space-y-6">
           <Button
             variant="ghost"
             size="sm"
@@ -104,7 +104,8 @@ export default function ChangePassword() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div className="text-center">
+          
+          <div>
             <h1 className="text-3xl font-bold tracking-tight">Change Password</h1>
             <p className="text-muted-foreground mt-2">
               Update your account password securely
@@ -113,7 +114,7 @@ export default function ChangePassword() {
         </div>
 
         <div className="flex justify-center">
-          <Card className="w-full max-w-md mx-auto">
+          <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
               <CardDescription>
