@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -22,19 +21,6 @@ interface CategoryStats {
   Medium: number;
   Others: number;
 }
-
-const COLORS = {
-  MSME: '#10b981', // green
-  'Non MSME': '#ef4444', // red
-  Others: '#f59e0b', // amber
-};
-
-const CATEGORY_COLORS = {
-  Micro: '#3b82f6', // blue
-  Small: '#8b5cf6', // purple
-  Medium: '#f97316', // orange
-  Others: '#6b7280', // gray
-};
 
 export default function Analytics() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -104,21 +90,8 @@ export default function Analytics() {
     setCategoryStats(categoryCounts);
   };
 
-  const msmeChartData = [
-    { name: 'MSME', value: msmeStats.MSME, color: COLORS.MSME },
-    { name: 'Non MSME', value: msmeStats['Non MSME'], color: COLORS['Non MSME'] },
-    { name: 'Others', value: msmeStats.Others, color: COLORS.Others },
-  ].filter(item => item.value > 0);
-
-  const categoryChartData = [
-    { name: 'Micro', value: categoryStats.Micro, color: CATEGORY_COLORS.Micro },
-    { name: 'Small', value: categoryStats.Small, color: CATEGORY_COLORS.Small },
-    { name: 'Medium', value: categoryStats.Medium, color: CATEGORY_COLORS.Medium },
-    { name: 'Others', value: categoryStats.Others, color: CATEGORY_COLORS.Others },
-  ].filter(item => item.value > 0);
-
   const getPercentage = (value: number, total: number) => {
-    return total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+    return total > 0 ? ((value / total) * 100) : 0;
   };
 
   if (loading) {
@@ -161,7 +134,7 @@ export default function Analytics() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">MSME Certified</CardTitle>
                 <Badge className="bg-green-50 text-green-700 border-green-200">
-                  {getPercentage(msmeStats.MSME, msmeStats.total)}%
+                  {getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -174,7 +147,7 @@ export default function Analytics() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Non MSME</CardTitle>
                 <Badge className="bg-red-50 text-red-700 border-red-200">
-                  {getPercentage(msmeStats['Non MSME'], msmeStats.total)}%
+                  {getPercentage(msmeStats['Non MSME'], msmeStats.total).toFixed(1)}%
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -187,7 +160,7 @@ export default function Analytics() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Others/Pending</CardTitle>
                 <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  {getPercentage(msmeStats.Others, msmeStats.total)}%
+                  {getPercentage(msmeStats.Others, msmeStats.total).toFixed(1)}%
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -197,79 +170,91 @@ export default function Analytics() {
             </Card>
           </div>
 
-          {/* MSME Status Charts */}
+          {/* MSME Status Visual Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>MSME Status Distribution</CardTitle>
-                <CardDescription>Pie chart showing vendor status breakdown</CardDescription>
+                <CardDescription>Visual breakdown of vendor status</CardDescription>
               </CardHeader>
-              <CardContent>
-                {msmeChartData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      MSME: { label: "MSME", color: COLORS.MSME },
-                      "Non MSME": { label: "Non MSME", color: COLORS["Non MSME"] },
-                      Others: { label: "Others", color: COLORS.Others },
-                    }}
-                    className="h-[300px]"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={msmeChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {msmeChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No data available
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-sm font-medium">MSME</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {msmeStats.MSME} ({getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%)
+                    </span>
                   </div>
-                )}
+                  <Progress 
+                    value={getPercentage(msmeStats.MSME, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span className="text-sm font-medium">Non MSME</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {msmeStats['Non MSME']} ({getPercentage(msmeStats['Non MSME'], msmeStats.total).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={getPercentage(msmeStats['Non MSME'], msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span className="text-sm font-medium">Others</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {msmeStats.Others} ({getPercentage(msmeStats.Others, msmeStats.total).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={getPercentage(msmeStats.Others, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>MSME Status Comparison</CardTitle>
-                <CardDescription>Bar chart comparing vendor statuses</CardDescription>
+                <CardTitle>Status Summary</CardTitle>
+                <CardDescription>Key insights from MSME status data</CardDescription>
               </CardHeader>
-              <CardContent>
-                {msmeChartData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      value: { label: "Count", color: "hsl(var(--primary))" },
-                    }}
-                    className="h-[300px]"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={msmeChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="value" fill="hsl(var(--primary))" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No data available
+              <CardContent className="space-y-4">
+                <div className="text-center p-6 bg-muted/50 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%
                   </div>
-                )}
+                  <p className="text-sm text-muted-foreground">MSME Compliance Rate</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Certified MSME vendors:</span>
+                    <span className="font-medium text-green-600">{msmeStats.MSME}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Non-MSME vendors:</span>
+                    <span className="font-medium text-red-600">{msmeStats['Non MSME']}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Pending/Others:</span>
+                    <span className="font-medium text-yellow-600">{msmeStats.Others}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -285,7 +270,7 @@ export default function Analytics() {
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">{categoryStats.Micro}</div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Micro, msmeStats.total)}% of total
+                  {getPercentage(categoryStats.Micro, msmeStats.total).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
@@ -297,7 +282,7 @@ export default function Analytics() {
               <CardContent>
                 <div className="text-2xl font-bold text-purple-600">{categoryStats.Small}</div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Small, msmeStats.total)}% of total
+                  {getPercentage(categoryStats.Small, msmeStats.total).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
@@ -309,7 +294,7 @@ export default function Analytics() {
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600">{categoryStats.Medium}</div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Medium, msmeStats.total)}% of total
+                  {getPercentage(categoryStats.Medium, msmeStats.total).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
@@ -321,86 +306,110 @@ export default function Analytics() {
               <CardContent>
                 <div className="text-2xl font-bold text-gray-600">{categoryStats.Others}</div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Others, msmeStats.total)}% of total
+                  {getPercentage(categoryStats.Others, msmeStats.total).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* MSME Category Charts */}
+          {/* MSME Category Visual Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>MSME Category Distribution</CardTitle>
                 <CardDescription>Breakdown by enterprise size</CardDescription>
               </CardHeader>
-              <CardContent>
-                {categoryChartData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      Micro: { label: "Micro", color: CATEGORY_COLORS.Micro },
-                      Small: { label: "Small", color: CATEGORY_COLORS.Small },
-                      Medium: { label: "Medium", color: CATEGORY_COLORS.Medium },
-                      Others: { label: "Others", color: CATEGORY_COLORS.Others },
-                    }}
-                    className="h-[300px]"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categoryChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {categoryChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No data available
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-sm font-medium">Micro</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {categoryStats.Micro} ({getPercentage(categoryStats.Micro, msmeStats.total).toFixed(1)}%)
+                    </span>
                   </div>
-                )}
+                  <Progress 
+                    value={getPercentage(categoryStats.Micro, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-sm font-medium">Small</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {categoryStats.Small} ({getPercentage(categoryStats.Small, msmeStats.total).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={getPercentage(categoryStats.Small, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                      <span className="text-sm font-medium">Medium</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {categoryStats.Medium} ({getPercentage(categoryStats.Medium, msmeStats.total).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={getPercentage(categoryStats.Medium, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                      <span className="text-sm font-medium">Others</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {categoryStats.Others} ({getPercentage(categoryStats.Others, msmeStats.total).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={getPercentage(categoryStats.Others, msmeStats.total)} 
+                    className="h-2"
+                  />
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Category Comparison</CardTitle>
-                <CardDescription>Bar chart comparing enterprise categories</CardDescription>
+                <CardTitle>Category Insights</CardTitle>
+                <CardDescription>Enterprise size distribution analysis</CardDescription>
               </CardHeader>
-              <CardContent>
-                {categoryChartData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      value: { label: "Count", color: "hsl(var(--primary))" },
-                    }}
-                    className="h-[300px]"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={categoryChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="value" fill="hsl(var(--primary))" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No data available
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{categoryStats.Micro}</div>
+                    <p className="text-xs text-blue-700">Micro</p>
                   </div>
-                )}
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{categoryStats.Small}</div>
+                    <p className="text-xs text-purple-700">Small</p>
+                  </div>
+                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{categoryStats.Medium}</div>
+                    <p className="text-xs text-orange-700">Medium</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-600">{categoryStats.Others}</div>
+                    <p className="text-xs text-gray-700">Others</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
