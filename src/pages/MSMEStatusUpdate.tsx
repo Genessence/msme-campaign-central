@@ -242,6 +242,7 @@ export default function MSMEStatusUpdate() {
         const fileExtension = data.certificate.name.split('.').pop();
         fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}.${fileExtension}`;
         
+        console.log('Uploading file:', fileName, 'Size:', data.certificate.size);
         const { error: uploadError } = await supabase.storage
           .from('msme-documents')
           .upload(fileName, data.certificate, {
@@ -250,8 +251,14 @@ export default function MSMEStatusUpdate() {
 
         if (uploadError) {
           console.error('File upload error:', uploadError);
+          toast({
+            title: "Upload Failed",
+            description: `Failed to upload certificate: ${uploadError.message}`,
+            variant: "destructive",
+          });
           throw new Error('Failed to upload certificate');
         }
+        console.log('File uploaded successfully:', fileName);
       } else if (data.msmeStatus === 'Non MSME') {
         // Generate PDF for Non MSME declaration
         const pdf = new jsPDF();
@@ -277,6 +284,7 @@ export default function MSMEStatusUpdate() {
         const pdfBlob = pdf.output('blob');
         fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}_Declaration.pdf`;
         
+        console.log('Uploading PDF:', fileName);
         const { error: uploadError } = await supabase.storage
           .from('msme-documents')
           .upload(fileName, pdfBlob, {
@@ -286,8 +294,14 @@ export default function MSMEStatusUpdate() {
 
         if (uploadError) {
           console.error('PDF upload error:', uploadError);
+          toast({
+            title: "Upload Failed",
+            description: `Failed to upload declaration PDF: ${uploadError.message}`,
+            variant: "destructive",
+          });
           throw new Error('Failed to upload declaration PDF');
         }
+        console.log('PDF uploaded successfully:', fileName);
       }
 
       // Store file reference in document_uploads table
