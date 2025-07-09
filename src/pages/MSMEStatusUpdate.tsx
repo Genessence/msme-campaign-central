@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -70,6 +70,7 @@ export default function MSMEStatusUpdate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [loadingVendor, setLoadingVendor] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<MSMEFormData>({
@@ -84,6 +85,35 @@ export default function MSMEStatusUpdate() {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = form;
   const msmeStatus = watch('msmeStatus');
+  const vendorCode = watch('vendorCode');
+
+  // Auto-populate vendor data when vendor code changes
+  useEffect(() => {
+    const fetchVendorData = async () => {
+      if (vendorCode && vendorCode.length >= 3) {
+        setLoadingVendor(true);
+        try {
+          const { data: vendor, error } = await supabase
+            .from('vendors')
+            .select('vendor_name, location')
+            .eq('vendor_code', vendorCode)
+            .maybeSingle();
+
+          if (vendor && !error) {
+            setValue('vendorName', vendor.vendor_name);
+            setValue('businessAddress', vendor.location || '');
+          }
+        } catch (error) {
+          console.error('Error fetching vendor data:', error);
+        } finally {
+          setLoadingVendor(false);
+        }
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchVendorData, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [vendorCode, setValue]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -223,27 +253,16 @@ export default function MSMEStatusUpdate() {
 
   if (submitSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Building className="h-12 w-12 text-primary mr-3" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">MSME Status Portal</h1>
-                <p className="text-gray-600">Ministry of Micro, Small and Medium Enterprises</p>
-              </div>
-            </div>
-          </div>
-
           <div className="max-w-2xl mx-auto">
             <Card className="text-center">
               <CardContent className="p-8">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold mb-2">
                   Submission Successful!
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-muted-foreground mb-6">
                   Thank you for updating your MSME status. Your information has been recorded successfully.
                 </p>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -261,42 +280,38 @@ export default function MSMEStatusUpdate() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Building className="h-12 w-12 text-primary mr-3" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">MSME Status Portal</h1>
-              <p className="text-gray-600">Ministry of Micro, Small and Medium Enterprises</p>
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <Building className="h-12 w-12 text-primary mr-3" />
+              <div>
+                <h1 className="text-3xl font-bold">MSME Status Portal</h1>
+                <p className="text-muted-foreground">Amber Compliance System</p>
+              </div>
+            </div>
+            <div className="max-w-2xl mx-auto">
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  Please update your MSME certification status to ensure compliance with regulations.
+                  All information provided will be kept confidential and used for official purposes only.
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
-          <div className="max-w-2xl mx-auto">
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                Please update your MSME certification status to ensure compliance with government regulations.
-                All information provided will be kept confidential and used for official purposes only.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
 
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="h-5 w-5 mr-2" />
-                  Basic Information
-                </CardTitle>
-                <CardDescription>
-                  Please provide your basic business information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>MSME Status Update Form</CardTitle>
+              <CardDescription>
+                Please provide your business information and current MSME status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="vendorCode">
@@ -308,6 +323,9 @@ export default function MSMEStatusUpdate() {
                       placeholder="Enter your vendor code"
                       className={errors.vendorCode ? 'border-red-500' : ''}
                     />
+                    {loadingVendor && (
+                      <p className="text-sm text-muted-foreground">Loading vendor data...</p>
+                    )}
                     {errors.vendorCode && (
                       <p className="text-red-500 text-sm flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1" />
@@ -353,21 +371,7 @@ export default function MSMEStatusUpdate() {
                     </p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* MSME Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  MSME Status Information
-                </CardTitle>
-                <CardDescription>
-                  Select your current MSME certification status
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label>Current MSME Status <span className="text-red-500">*</span></Label>
                   <Select onValueChange={(value) => setValue('msmeStatus', value as any)}>
@@ -422,7 +426,7 @@ export default function MSMEStatusUpdate() {
                         placeholder="UDYAM-XX-XX-XXXXXXX"
                         className={errors.udyamNumber ? 'border-red-500' : ''}
                       />
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         Format: UDYAM-[State Code]-[Year]-[7 digits]
                       </p>
                       {errors.udyamNumber && (
@@ -446,11 +450,11 @@ export default function MSMEStatusUpdate() {
                         />
                         <label
                           htmlFor="certificate"
-                          className="cursor-pointer text-sm text-gray-600"
+                          className="cursor-pointer text-sm text-muted-foreground"
                         >
                           Click to upload your MSME certificate
                           <br />
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             Supports PDF, PNG, JPG (Max 10MB)
                           </span>
                         </label>
@@ -463,7 +467,7 @@ export default function MSMEStatusUpdate() {
                 {msmeStatus === 'Non MSME' && (
                   <div className="space-y-4 border-l-4 border-orange-500 pl-6 bg-orange-50 p-4 rounded-r-lg">
                     <h4 className="font-semibold text-orange-800 mb-4">Declaration</h4>
-                    <p className="text-sm text-gray-700 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       By checking this box, you confirm that your organization does not qualify for MSME certification.
                     </p>
                     <div className="flex items-start space-x-2">
@@ -486,46 +490,42 @@ export default function MSMEStatusUpdate() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* Progress Bar */}
-            {isSubmitting && (
-              <Card>
-                <CardContent className="p-6">
+                {/* Progress Bar */}
+                {isSubmitting && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Submitting your information...</span>
-                      <span className="text-sm text-gray-600">{uploadProgress}%</span>
+                      <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
                     </div>
                     <Progress value={uploadProgress} className="h-2" />
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
 
-            {/* Submit Button */}
-            <div className="flex justify-center">
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isSubmitting}
-                className="w-full md:w-auto px-8 py-3 text-lg"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit MSME Status Update'}
-              </Button>
-            </div>
-          </form>
-        </div>
+                {/* Submit Button */}
+                <div className="flex justify-center pt-6">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isSubmitting}
+                    className="w-full md:w-auto px-8 py-3"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            © 2024 Ministry of Micro, Small and Medium Enterprises, Government of India
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            For technical support, contact: support@msme.gov.in
-          </p>
+          {/* Footer */}
+          <div className="text-center mt-8 pt-8 border-t">
+            <p className="text-sm text-muted-foreground">
+              © 2024 Amber Compliance System
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              For technical support, contact: support@amber.com
+            </p>
+          </div>
         </div>
       </div>
     </div>
