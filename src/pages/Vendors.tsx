@@ -734,19 +734,18 @@ export default function Vendors() {
             <div className="border rounded-md overflow-hidden">
               <ScrollArea className="h-[600px] w-full">
                 <Table className="w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Vendor Name</TableHead>
-                      <TableHead className="min-w-[100px]">Code</TableHead>
-                      <TableHead className="min-w-[200px]">Email</TableHead>
-                      <TableHead className="min-w-[120px]">Phone</TableHead>
-                      <TableHead className="min-w-[150px]">MSME Status</TableHead>
-                      <TableHead className="min-w-[100px]">Category</TableHead>
-                      <TableHead className="min-w-[120px]">Location</TableHead>
-                      <TableHead className="min-w-[120px]">Balance</TableHead>
-                      <TableHead className="min-w-[120px]">Document</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead className="min-w-[150px]">Vendor Name</TableHead>
+                       <TableHead className="min-w-[100px]">Code</TableHead>
+                       <TableHead className="min-w-[200px]">Email</TableHead>
+                       <TableHead className="min-w-[120px]">Phone</TableHead>
+                       <TableHead className="min-w-[150px]">MSME Status</TableHead>
+                       <TableHead className="min-w-[100px]">Category</TableHead>
+                       <TableHead className="min-w-[120px]">Location</TableHead>
+                       <TableHead className="min-w-[120px]">Document</TableHead>
+                     </TableRow>
+                   </TableHeader>
                     <TableBody>
                       {vendors.map((vendor) => (
                         <TableRow key={vendor.id}>
@@ -768,21 +767,18 @@ export default function Vendors() {
                               "—"
                             )}
                           </TableCell>
-                          <TableCell>{vendor.location || "—"}</TableCell>
-                          <TableCell>
-                            {vendor.closing_balance ? `₹${vendor.closing_balance.toLocaleString()}` : "—"}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
-                              disabled={!vendorDocuments[vendor.id]}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
-                          </TableCell>
+                           <TableCell>{vendor.location || "—"}</TableCell>
+                           <TableCell>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => downloadVendorDocument(vendor.id, vendor.vendor_name)}
+                               disabled={!vendorDocuments[vendor.id]}
+                             >
+                               <Download className="h-4 w-4 mr-2" />
+                               Download
+                             </Button>
+                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
