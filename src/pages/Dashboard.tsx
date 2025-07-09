@@ -126,9 +126,40 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            No recent activity to show. Start by creating your first campaign or adding vendors.
-          </div>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading recent activity...</div>
+          ) : metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
+            <div className="space-y-4">
+              {metrics.recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-start space-x-3 pb-3 last:pb-0 border-b last:border-0">
+                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                    activity.type === 'campaign' ? 'bg-blue-500' : 
+                    activity.type === 'vendor' ? 'bg-green-500' : 'bg-orange-500'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                    {(activity as any).status && (
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {(activity as any).status}
+                      </Badge>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(activity.timestamp).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No recent activity to show. Start by creating your first campaign or adding vendors.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
