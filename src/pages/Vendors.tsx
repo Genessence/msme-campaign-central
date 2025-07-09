@@ -409,35 +409,35 @@ export default function Vendors() {
             </div>
           ) : (
             <div className="border rounded-md overflow-hidden">
-              <ScrollArea className="h-[600px] max-w-full">
-                <div className="w-[1200px]">
+              <ScrollArea className="h-[600px] w-full">
+                <div className="w-full">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                         <TableHead className="w-[150px]">Vendor Name</TableHead>
-                         <TableHead className="w-[100px]">Code</TableHead>
-                         <TableHead className="w-[200px]">Email</TableHead>
-                         <TableHead className="w-[150px]">Phone</TableHead>
-                         <TableHead className="w-[180px]">MSME Status</TableHead>
-                         <TableHead className="w-[100px]">Category</TableHead>
-                         <TableHead className="w-[150px]">Location</TableHead>
-                         <TableHead className="w-[120px]">Balance</TableHead>
-                         <TableHead className="w-[120px]">Document</TableHead>
+                         <TableHead className="w-auto">Vendor Name</TableHead>
+                         <TableHead className="w-auto">Code</TableHead>
+                         <TableHead className="w-auto">Email</TableHead>
+                         <TableHead className="w-auto">Phone</TableHead>
+                         <TableHead className="w-auto">MSME Status</TableHead>
+                         <TableHead className="w-auto">Category</TableHead>
+                         <TableHead className="w-auto">Location</TableHead>
+                         <TableHead className="w-auto">Balance</TableHead>
+                         <TableHead className="w-auto">Document</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {vendors.map((vendor) => (
                         <TableRow key={vendor.id}>
-                          <TableCell className="font-medium w-[150px]">{vendor.vendor_name}</TableCell>
-                          <TableCell className="w-[100px]">{vendor.vendor_code}</TableCell>
-                          <TableCell className="w-[200px]">{vendor.email || "—"}</TableCell>
-                          <TableCell className="w-[150px]">{vendor.phone || "—"}</TableCell>
-                          <TableCell className="w-[180px]">
+                          <TableCell className="font-medium">{vendor.vendor_name}</TableCell>
+                          <TableCell>{vendor.vendor_code}</TableCell>
+                          <TableCell>{vendor.email || "—"}</TableCell>
+                          <TableCell>{vendor.phone || "—"}</TableCell>
+                          <TableCell>
                             <Badge className={getStatusColor(vendor.msme_status || "")}>
                               {vendor.msme_status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="w-[100px]">
+                          <TableCell>
                             {vendor.msme_category ? (
                               <Badge className={getCategoryColor(vendor.msme_category)}>
                                 {vendor.msme_category}
@@ -446,11 +446,11 @@ export default function Vendors() {
                               "—"
                             )}
                           </TableCell>
-                          <TableCell className="w-[150px]">{vendor.location || "—"}</TableCell>
-                          <TableCell className="w-[120px]">
+                          <TableCell>{vendor.location || "—"}</TableCell>
+                          <TableCell>
                             {vendor.closing_balance ? `₹${vendor.closing_balance.toLocaleString()}` : "—"}
                           </TableCell>
-                          <TableCell className="w-[120px]">
+                          <TableCell>
                             <Button
                               variant="outline"
                               size="sm"

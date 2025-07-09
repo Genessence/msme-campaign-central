@@ -94,19 +94,20 @@ export default function ChangePassword() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col space-y-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate(-1)}
+            className="self-start"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div>
+          <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">Change Password</h1>
-            <p className="text-muted-foreground">
-              Update your account password
+            <p className="text-muted-foreground mt-2">
+              Update your account password securely
             </p>
           </div>
         </div>
