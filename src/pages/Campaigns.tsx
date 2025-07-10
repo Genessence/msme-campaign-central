@@ -269,7 +269,11 @@ export default function Campaigns() {
                       <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
                       <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                        >
                           View Details
                         </Button>
                       </TableCell>

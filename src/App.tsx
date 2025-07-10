@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
+import CampaignDetails from "./pages/CampaignDetails";
 import Templates from "./pages/Templates";
 import Vendors from "./pages/Vendors";
 import CreateEmailTemplate from "./pages/CreateEmailTemplate";
@@ -84,6 +85,11 @@ const App = () => (
             <Route path="/campaigns/create" element={
               <ProtectedRoute>
                 <CreateCampaign />
+              </ProtectedRoute>
+            } />
+            <Route path="/campaigns/:id" element={
+              <ProtectedRoute>
+                <CampaignDetails />
               </ProtectedRoute>
             } />
             <Route path="/vendors" element={

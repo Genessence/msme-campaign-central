@@ -1,0 +1,361 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Calendar, Users, Mail, MessageSquare, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
+
+interface CampaignDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  deadline: string | null;
+  created_at: string;
+  target_vendors: string[] | null;
+  email_template_id: string | null;
+  whatsapp_template_id: string | null;
+}
+
+interface VendorResponse {
+  vendor_id: string;
+  vendor_name: string;
+  vendor_email: string | null;
+  vendor_phone: string | null;
+  response_status: string;
+  submitted_at: string | null;
+  form_data: any;
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Active': return 'bg-green-100 text-green-800 border-green-200';
+    case 'Draft': return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'Completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getResponseStatusIcon = (status: string) => {
+  switch (status) {
+    case 'Completed': return <CheckCircle className="h-4 w-4 text-green-600" />;
+    case 'Pending': return <Clock className="h-4 w-4 text-yellow-600" />;
+    case 'Partial': return <XCircle className="h-4 w-4 text-red-600" />;
+    default: return <Clock className="h-4 w-4 text-gray-600" />;
+  }
+};
+
+export default function CampaignDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
+  const [vendorResponses, setVendorResponses] = useState<VendorResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchCampaignDetails();
+    }
+  }, [id]);
+
+  const fetchCampaignDetails = async () => {
+    try {
+      // Fetch campaign details
+      const { data: campaignData, error: campaignError } = await supabase
+        .from('msme_campaigns')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (campaignError) throw campaignError;
+      setCampaign(campaignData);
+
+      // Fetch vendor responses with vendor details
+      const { data: responsesData, error: responsesError } = await supabase
+        .from('msme_responses')
+        .select(`
+          vendor_id,
+          response_status,
+          submitted_at,
+          form_data,
+          vendors (
+            vendor_name,
+            email,
+            phone
+          )
+        `)
+        .eq('campaign_id', id);
+
+      if (responsesError) throw responsesError;
+
+      const formattedResponses = responsesData?.map(response => ({
+        vendor_id: response.vendor_id,
+        vendor_name: response.vendors?.vendor_name || 'Unknown Vendor',
+        vendor_email: response.vendors?.email || null,
+        vendor_phone: response.vendors?.phone || null,
+        response_status: response.response_status,
+        submitted_at: response.submitted_at,
+        form_data: response.form_data,
+      })) || [];
+
+      setVendorResponses(formattedResponses);
+    } catch (error) {
+      console.error('Error fetching campaign details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch campaign details. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate('/campaigns')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Campaigns
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">Campaign not found.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const totalVendors = campaign.target_vendors?.length || 0;
+  const completedResponses = vendorResponses.filter(r => r.response_status === 'Completed').length;
+  const pendingResponses = vendorResponses.filter(r => r.response_status === 'Pending').length;
+  const partialResponses = vendorResponses.filter(r => r.response_status === 'Partial').length;
+  const progressPercentage = totalVendors > 0 ? (completedResponses / totalVendors) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate('/campaigns')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Campaigns
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{campaign.name}</h1>
+            <p className="text-muted-foreground">{campaign.description}</p>
+          </div>
+        </div>
+        <Badge variant="outline" className={getStatusColor(campaign.status)}>
+          {campaign.status}
+        </Badge>
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalVendors}</div>
+            <p className="text-xs text-muted-foreground">Targeted for this campaign</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedResponses}</div>
+            <p className="text-xs text-muted-foreground">Responses submitted</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingResponses}</div>
+            <p className="text-xs text-muted-foreground">Awaiting response</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Progress</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Math.round(progressPercentage)}%</div>
+            <Progress value={progressPercentage} className="mt-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Details Tabs */}
+      <Tabs defaultValue="responses" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="responses">Vendor Responses</TabsTrigger>
+          <TabsTrigger value="details">Campaign Details</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="responses">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendor Responses</CardTitle>
+              <CardDescription>
+                Track the status of responses from all targeted vendors
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vendor Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Submitted At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vendorResponses.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          No responses found for this campaign.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      vendorResponses.map((response) => (
+                        <TableRow key={response.vendor_id}>
+                          <TableCell className="font-medium">
+                            {response.vendor_name}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {response.vendor_email && (
+                                <div className="flex items-center gap-1 text-sm">
+                                  <Mail className="h-3 w-3" />
+                                  {response.vendor_email}
+                                </div>
+                              )}
+                              {response.vendor_phone && (
+                                <div className="flex items-center gap-1 text-sm">
+                                  <MessageSquare className="h-3 w-3" />
+                                  {response.vendor_phone}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getResponseStatusIcon(response.response_status)}
+                              <span className="text-sm">{response.response_status}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {response.submitted_at 
+                              ? new Date(response.submitted_at).toLocaleDateString()
+                              : 'Not submitted'
+                            }
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Information</CardTitle>
+              <CardDescription>
+                Detailed information about this campaign
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-2">Basic Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Campaign Name:</span>
+                      <span className="ml-2 font-medium">{campaign.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Description:</span>
+                      <span className="ml-2">{campaign.description || 'No description provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge variant="outline" className={`ml-2 ${getStatusColor(campaign.status)}`}>
+                        {campaign.status}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Created:</span>
+                      <span className="ml-2">{new Date(campaign.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Deadline:</span>
+                      <span className="ml-2">{campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'No deadline set'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">Templates Used</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Email Template:</span>
+                      <span className="ml-2">{campaign.email_template_id ? 'Configured' : 'Not configured'}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">WhatsApp Template:</span>
+                      <span className="ml-2">{campaign.whatsapp_template_id ? 'Configured' : 'Not configured'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
