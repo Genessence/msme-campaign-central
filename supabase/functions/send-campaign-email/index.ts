@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "MSME Campaign <onboarding@resend.dev>", // TODO: Replace with your verified domain
+      from: Deno.env.get("SENDER_EMAIL_ADDRESS") || "Amber Compliance System <compliance@ambercompliancesystem.com>",
       to: [vendorEmail],
       subject: emailSubject,
       html: emailBody,
