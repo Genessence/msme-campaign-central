@@ -207,12 +207,12 @@ export default function Vendors() {
       
       // Accept numbers that are likely mobile:
       // - 10 digits starting with 6-9 (Indian mobile)
-      // - 11 digits starting with 8 (some carriers)
-      // - International format starting with +
+      // - 11 digits starting with 0
+      // - International format starting with + (up to 12 digits excluding +)
       if (
         (cleanDigits.length === 10 && /^[6-9]/.test(cleanDigits)) ||
-        (cleanDigits.length === 11 && /^[8]/.test(cleanDigits)) ||
-        (phone.startsWith('+') && cleanDigits.length >= 10 && cleanDigits.length <= 15)
+        (cleanDigits.length === 11 && /^0/.test(cleanDigits)) ||
+        (phone.startsWith('+') && cleanDigits.length >= 10 && cleanDigits.length <= 12)
       ) {
         console.log(`Mobile number accepted: ${phone}`);
         mobiles.push(phone);
