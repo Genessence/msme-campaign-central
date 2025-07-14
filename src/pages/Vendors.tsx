@@ -192,8 +192,13 @@ export default function Vendors() {
     const landlines: string[] = [];
     const invalid: string[] = [];
 
-    phones.forEach(phone => {
+     phones.forEach(phone => {
       console.log(`Checking phone: "${phone}"`);
+      
+      // Debug specific numbers from user
+      if (['7985087024', '8756155274', '9450443490'].includes(phone)) {
+        console.log(`🔍 Debugging user's number: ${phone}`);
+      }
       
       // More lenient validation - accept numbers that look like mobile numbers
       const cleanDigits = phone.replace(/[^\d]/g, '');
