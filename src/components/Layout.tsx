@@ -21,7 +21,7 @@ export default function Layout({ children }: LayoutProps) {
             <SidebarTrigger />
             
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-primary">MSME Management System</h1>
+              <h1 className="text-lg font-semibold text-primary">Amber Compliance System</h1>
             </div>
             
             <div className="flex items-center gap-4">
