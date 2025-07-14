@@ -294,6 +294,9 @@ export default function Vendors() {
       
       const processedData = jsonData.map((row: any) => {
         console.log("Processing row:", row);
+        console.log("Raw phone value:", row.phone, "Type:", typeof row.phone);
+        console.log("Available keys in row:", Object.keys(row));
+        
         const emailData = extractValidEmails(row.email || "");
         const phoneData = extractValidMobileNumbers(row.phone || "");
         console.log("Phone data result:", phoneData);
