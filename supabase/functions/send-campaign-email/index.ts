@@ -16,6 +16,7 @@ interface SendCampaignEmailRequest {
   vendorId: string;
   vendorEmail: string;
   vendorName: string;
+  vendorCode: string;
   templateId: string;
 }
 
@@ -26,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { campaignId, vendorId, vendorEmail, vendorName, templateId }: SendCampaignEmailRequest = await req.json();
+    const { campaignId, vendorId, vendorEmail, vendorName, vendorCode, templateId }: SendCampaignEmailRequest = await req.json();
 
     console.log('Sending campaign email:', { campaignId, vendorId, vendorEmail, templateId });
 
@@ -48,6 +49,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (template.variables && template.variables.includes('vendor_name')) {
       emailBody = emailBody.replace(/{vendor_name}/g, vendorName);
       emailSubject = emailSubject.replace(/{vendor_name}/g, vendorName);
+    }
+    
+    if (template.variables && template.variables.includes('vendor_code')) {
+      emailBody = emailBody.replace(/{vendor_code}/g, vendorCode);
+      emailSubject = emailSubject.replace(/{vendor_code}/g, vendorCode);
     }
 
     // Send email via Resend

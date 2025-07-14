@@ -65,6 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
                 vendorId: vendor.id,
                 vendorEmail: vendor.email,
                 vendorName: vendor.vendor_name,
+                vendorCode: vendor.vendor_code,
                 templateId: campaign.email_template_id,
               }),
             });
