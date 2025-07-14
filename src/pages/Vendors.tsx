@@ -215,12 +215,22 @@ export default function Vendors() {
       // - 10 digits starting with 6-9 (Indian mobile)
       // - 11 digits starting with 0
       // - International format starting with + (10-15 digits)
-      if (
-        (cleanDigits.length === 10 && /^[6-9]/.test(cleanDigits)) ||
-        (cleanDigits.length === 11 && /^0/.test(cleanDigits)) ||
-        (phone.startsWith('+') && cleanDigits.length >= 10 && cleanDigits.length <= 15)
-      ) {
-        console.log(`Mobile number accepted: ${phone}`);
+      
+      const is10DigitsMobile = cleanDigits.length === 10 && /^[6-9]/.test(cleanDigits);
+      const is11DigitsWithZero = cleanDigits.length === 11 && /^0/.test(cleanDigits);
+      const isInternational = phone.startsWith('+') && cleanDigits.length >= 10 && cleanDigits.length <= 15;
+      
+      console.log(`Validation for "${phone}":`, {
+        cleanDigits,
+        length: cleanDigits.length,
+        is10DigitsMobile,
+        is11DigitsWithZero,
+        isInternational,
+        startsWithValidDigit: /^[6-9]/.test(cleanDigits)
+      });
+      
+      if (is10DigitsMobile || is11DigitsWithZero || isInternational) {
+        console.log(`✅ Mobile number accepted: ${phone}`);
         mobiles.push(phone);
       } else if (cleanDigits.length >= 6 && cleanDigits.length <= 15) {
         // For other numbers, use basic validation
