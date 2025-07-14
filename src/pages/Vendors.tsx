@@ -202,6 +202,7 @@ export default function Vendors() {
       
       // More lenient validation - accept numbers that look like mobile numbers
       const cleanDigits = phone.replace(/[^\d]/g, '');
+      console.log(`Clean digits for "${phone}": "${cleanDigits}", length: ${cleanDigits.length}`);
       
       // Skip numbers that are clearly landlines (starting with 0 and area codes)
       if (phone.match(/^0\d{2,4}-\d+$/)) {
