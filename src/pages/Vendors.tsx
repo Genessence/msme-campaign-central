@@ -297,8 +297,15 @@ export default function Vendors() {
         console.log("Raw phone value:", row.phone, "Type:", typeof row.phone);
         console.log("Available keys in row:", Object.keys(row));
         
+        // Handle phone number conversion - Excel might convert to number
+        let phoneValue = row.phone || "";
+        if (typeof phoneValue === 'number') {
+          phoneValue = phoneValue.toString();
+        }
+        console.log("Converted phone value:", phoneValue, "Type:", typeof phoneValue);
+        
         const emailData = extractValidEmails(row.email || "");
-        const phoneData = extractValidMobileNumbers(row.phone || "");
+        const phoneData = extractValidMobileNumbers(phoneValue);
         console.log("Phone data result:", phoneData);
 
         return {
