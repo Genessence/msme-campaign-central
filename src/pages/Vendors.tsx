@@ -495,7 +495,15 @@ export default function Vendors() {
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(vendors);
+    // Remove unwanted fields from export
+    const fieldsToExclude = ['id', 'registration_date', 'last_updated_date', 'created_at', 'updated_at'];
+    const cleanedVendors = vendors.map(vendor => {
+      const cleanVendor = { ...vendor };
+      fieldsToExclude.forEach(field => delete cleanVendor[field]);
+      return cleanVendor;
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(cleanedVendors);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vendors");
     XLSX.writeFile(workbook, "vendors.xlsx");
