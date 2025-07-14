@@ -542,7 +542,7 @@ export default function MSMEStatusUpdate() {
                       <SelectValue placeholder="Select your MSME status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MSME Certified">MSME Certified</SelectItem>
+                      <SelectItem value="MSME Certified">MSME</SelectItem>
                       <SelectItem value="Non MSME">Non MSME</SelectItem>
                     </SelectContent>
                   </Select>

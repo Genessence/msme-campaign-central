@@ -132,7 +132,7 @@ export default function Analytics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">MSME Certified</CardTitle>
+                <CardTitle className="text-sm font-medium">MSME</CardTitle>
                 <Badge className="bg-green-50 text-green-700 border-green-200">
                   {getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%
                 </Badge>

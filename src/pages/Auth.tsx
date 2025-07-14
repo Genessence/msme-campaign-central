@@ -53,7 +53,7 @@ export default function Auth() {
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
             <div className="text-primary-foreground font-bold text-2xl">M</div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">MSME Portal</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Amber Compliance System</h1>
           <p className="text-muted-foreground">
             Campaign Management & Vendor Status Updates
           </p>

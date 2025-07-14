@@ -132,7 +132,7 @@ export function VendorSelection({ data, onUpdate, onNext, onPrev }: VendorSelect
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="MSME Certified">MSME Certified</SelectItem>
+                  <SelectItem value="MSME Certified">MSME</SelectItem>
                   <SelectItem value="Non MSME">Non MSME</SelectItem>
                   <SelectItem value="MSME Application Pending">Application Pending</SelectItem>
                   <SelectItem value="Others">Others</SelectItem>
