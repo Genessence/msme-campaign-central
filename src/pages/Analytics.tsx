@@ -44,14 +44,29 @@ export default function Analytics() {
 
   const fetchVendors = async () => {
     try {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('*');
+      let allVendors: Vendor[] = [];
+      let start = 0;
+      const limit = 1000;
+      
+      while (true) {
+        const { data, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .range(start, start + limit - 1);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setVendors(data || []);
-      calculateStats(data || []);
+        if (!data || data.length === 0) break;
+        
+        allVendors = [...allVendors, ...data];
+        
+        if (data.length < limit) break;
+        
+        start += limit;
+      }
+
+      setVendors(allVendors);
+      calculateStats(allVendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
