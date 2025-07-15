@@ -49,6 +49,7 @@ export function VendorSelection({ data, onUpdate, onNext, onPrev }: VendorSelect
 
       if (error) throw error;
       setVendors(vendorsData || []);
+      console.log(vendorsData);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
