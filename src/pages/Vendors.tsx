@@ -76,11 +76,18 @@ export default function Vendors() {
   const fetchVendors = async () => {
     console.log("Fetching vendors...");
     try {
+      // First get the total count
+      const { count } = await supabase
+        .from("vendors")
+        .select("*", { count: "exact", head: true });
+      
+      console.log("Total vendors count:", count);
+
+      // Then get all vendors without any limit
       const { data, error } = await supabase
         .from("vendors")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5000); // Increase limit to handle large datasets
+        .order("created_at", { ascending: false });
 
       console.log("Vendors fetch result:", { data, error });
       console.log("Vendors count:", data?.length);
