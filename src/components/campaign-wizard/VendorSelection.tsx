@@ -41,15 +41,32 @@ export function VendorSelection({ data, onUpdate, onNext, onPrev }: VendorSelect
 
   const fetchVendors = async () => {
     try {
-      const { data: vendorsData, error } = await supabase
-        .from('vendors')
-        .select('*')
-        .order('vendor_name')
-        .range(0, 9999); // Use range to get up to 10,000 rows
+      // Fetch all vendors in batches of 1000
+      const allVendors = [];
+      const batchSize = 1000;
+      let from = 0;
+      
+      while (true) {
+        const { data, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .order('vendor_name')
+          .range(from, from + batchSize - 1);
 
-      if (error) throw error;
-      setVendors(vendorsData || []);
-      console.log(vendorsData);
+        if (error) throw error;
+        
+        if (!data || data.length === 0) break;
+        
+        allVendors.push(...data);
+        
+        // If we got less than batchSize, we've reached the end
+        if (data.length < batchSize) break;
+        
+        from += batchSize;
+      }
+
+      setVendors(allVendors);
+      console.log('Total vendors loaded:', allVendors.length);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
