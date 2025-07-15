@@ -44,7 +44,8 @@ export function VendorSelection({ data, onUpdate, onNext, onPrev }: VendorSelect
       const { data: vendorsData, error } = await supabase
         .from('vendors')
         .select('*')
-        .order('vendor_name');
+        .order('vendor_name')
+        .range(0, 9999); // Use range to get up to 10,000 rows
 
       if (error) throw error;
       setVendors(vendorsData || []);

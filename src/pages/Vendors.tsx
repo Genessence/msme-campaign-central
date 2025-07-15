@@ -83,11 +83,12 @@ export default function Vendors() {
       
       console.log("Total vendors count:", count);
 
-      // Then get all vendors without any limit
+      // Fetch all vendors by increasing the limit beyond default 1000
       const { data, error } = await supabase
         .from("vendors")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 9999); // Use range to get up to 10,000 rows
 
       console.log("Vendors fetch result:", { data, error });
       console.log("Vendors count:", data?.length);
