@@ -884,7 +884,7 @@ export default function Vendors() {
                        <TableHead className="w-[100px] sticky top-0 bg-background border-b">Phone</TableHead>
                        <TableHead className="w-[120px] sticky top-0 bg-background border-b">MSME Status</TableHead>
                        <TableHead className="w-[80px] sticky top-0 bg-background border-b">Category</TableHead>
-                       <TableHead className="w-[100px] sticky top-0 bg-background border-b">Location</TableHead>
+                       <TableHead className="w-[120px] sticky top-0 bg-background border-b">Location</TableHead>
                        <TableHead className="w-[100px] sticky top-0 bg-background border-b">Document</TableHead>
                      </TableRow>
                    </TableHeader>
@@ -911,7 +911,7 @@ export default function Vendors() {
                                "—"
                              )}
                            </TableCell>
-                           <TableCell className="truncate">{vendor.location || "—"}</TableCell>
+                           <TableCell className="truncate max-w-[120px]" title={vendor.location || ""}>{vendor.location || "—"}</TableCell>
                            <TableCell>
                              <Button
                                variant="outline"
