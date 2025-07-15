@@ -307,113 +307,137 @@ export default function Vendors() {
     setUploadStatus('Reading file...');
     
     try {
-      // Stage 1: Reading file (20%)
-      setUploadProgress(20);
+      // Stage 1: Reading file (10%)
+      setUploadProgress(10);
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Stage 2: Processing data (40%)
-      setUploadProgress(40);
-      setUploadStatus('Processing and validating data...');
+      console.log(`Processing ${jsonData.length} rows from Excel file`);
+
+      // Stage 2: Initial processing and validation (20%)
+      setUploadProgress(20);
+      setUploadStatus(`Processing ${jsonData.length} records...`);
       
       // Generate unique upload session ID for logging
       const uploadSessionId = crypto.randomUUID();
       const uploadLogs: any[] = [];
       
-      const processedData = jsonData.map((row: any) => {
-        console.log("Processing row:", row);
-        console.log("Raw phone value:", row.phone, "Type:", typeof row.phone);
-        console.log("Available keys in row:", Object.keys(row));
+      // Process data in smaller chunks to avoid memory issues
+      const CHUNK_SIZE = 100;
+      const processedData: any[] = [];
+      
+      for (let i = 0; i < jsonData.length; i += CHUNK_SIZE) {
+        const chunk = jsonData.slice(i, i + CHUNK_SIZE);
+        const chunkProgress = 20 + (i / jsonData.length) * 20; // 20-40%
+        setUploadProgress(chunkProgress);
+        setUploadStatus(`Processing records ${i + 1}-${Math.min(i + CHUNK_SIZE, jsonData.length)} of ${jsonData.length}...`);
         
-        // Handle phone number conversion - Excel might convert to number
-        let phoneValue = row.phone || "";
-        if (typeof phoneValue === 'number') {
-          phoneValue = phoneValue.toString();
-        }
-        console.log("Converted phone value:", phoneValue, "Type:", typeof phoneValue);
+        const processedChunk = chunk.map((row: any) => {
+          console.log("Processing row:", row);
+          console.log("Raw phone value:", row.phone, "Type:", typeof row.phone);
+          console.log("Available keys in row:", Object.keys(row));
+          
+          // Handle phone number conversion - Excel might convert to number
+          let phoneValue = row.phone || "";
+          if (typeof phoneValue === 'number') {
+            phoneValue = phoneValue.toString();
+          }
+          console.log("Converted phone value:", phoneValue, "Type:", typeof phoneValue);
+          
+          const emailData = extractValidEmails(row.email || "");
+          const phoneData = extractValidMobileNumbers(phoneValue);
+          console.log("Phone data result:", phoneData);
+
+          // Log invalid emails
+          if (emailData.invalid.length > 0) {
+            uploadLogs.push({
+              upload_session_id: uploadSessionId,
+              vendor_name: row.vendor_name || row.name || "",
+              vendor_code: row.vendor_code || row.code || "",
+              error_type: 'invalid_email',
+              error_details: `Invalid emails: ${emailData.invalid.join(', ')}`,
+              raw_data: { email: row.email, ...row }
+            });
+          }
+
+          // Log invalid phone numbers
+          if (phoneData.invalid.length > 0) {
+            uploadLogs.push({
+              upload_session_id: uploadSessionId,
+              vendor_name: row.vendor_name || row.name || "",
+              vendor_code: row.vendor_code || row.code || "",
+              error_type: 'invalid_phone',
+              error_details: `Invalid phone numbers: ${phoneData.invalid.join(', ')}`,
+              raw_data: { phone: phoneValue, ...row }
+            });
+          }
+
+          // Log missing email
+          if (!emailData.primary && row.email) {
+            uploadLogs.push({
+              upload_session_id: uploadSessionId,
+              vendor_name: row.vendor_name || row.name || "",
+              vendor_code: row.vendor_code || row.code || "",
+              error_type: 'missing_valid_email',
+              error_details: `No valid email found in: ${row.email}`,
+              raw_data: { email: row.email, ...row }
+            });
+          }
+
+          // Log missing phone
+          if (!phoneData.primary && phoneValue) {
+            uploadLogs.push({
+              upload_session_id: uploadSessionId,
+              vendor_name: row.vendor_name || row.name || "",
+              vendor_code: row.vendor_code || row.code || "",
+              error_type: 'missing_valid_phone',
+              error_details: `No valid phone found in: ${phoneValue}`,
+              raw_data: { phone: phoneValue, ...row }
+            });
+          }
+
+          return {
+            vendor_name: row.vendor_name || row.name || "",
+            vendor_code: row.vendor_code || row.code || "",
+            email: emailData.primary,
+            phone: phoneData.primary,
+            msme_status: row.msme_status || "Others",
+            msme_category: row.msme_category || null,
+            business_category: row.business_category || null,
+            location: row.location || null,
+            udyam_number: row.udyam_number || null,
+            opening_balance: row.opening_balance ? parseFloat(row.opening_balance) : null,
+            credit_amount: row.credit_amount ? parseFloat(row.credit_amount) : null,
+            debit_amount: row.debit_amount ? parseFloat(row.debit_amount) : null,
+            closing_balance: row.closing_balance ? parseFloat(row.closing_balance) : null,
+            emailData,
+            phoneData
+          };
+        });
         
-        const emailData = extractValidEmails(row.email || "");
-        const phoneData = extractValidMobileNumbers(phoneValue);
-        console.log("Phone data result:", phoneData);
+        processedData.push(...processedChunk);
+        
+        // Small delay to prevent UI blocking
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
 
-        // Log invalid emails
-        if (emailData.invalid.length > 0) {
-          uploadLogs.push({
-            upload_session_id: uploadSessionId,
-            vendor_name: row.vendor_name || row.name || "",
-            vendor_code: row.vendor_code || row.code || "",
-            error_type: 'invalid_email',
-            error_details: `Invalid emails: ${emailData.invalid.join(', ')}`,
-            raw_data: { email: row.email, ...row }
-          });
-        }
-
-        // Log invalid phone numbers
-        if (phoneData.invalid.length > 0) {
-          uploadLogs.push({
-            upload_session_id: uploadSessionId,
-            vendor_name: row.vendor_name || row.name || "",
-            vendor_code: row.vendor_code || row.code || "",
-            error_type: 'invalid_phone',
-            error_details: `Invalid phone numbers: ${phoneData.invalid.join(', ')}`,
-            raw_data: { phone: phoneValue, ...row }
-          });
-        }
-
-        // Log missing email
-        if (!emailData.primary && row.email) {
-          uploadLogs.push({
-            upload_session_id: uploadSessionId,
-            vendor_name: row.vendor_name || row.name || "",
-            vendor_code: row.vendor_code || row.code || "",
-            error_type: 'missing_valid_email',
-            error_details: `No valid email found in: ${row.email}`,
-            raw_data: { email: row.email, ...row }
-          });
-        }
-
-        // Log missing phone
-        if (!phoneData.primary && phoneValue) {
-          uploadLogs.push({
-            upload_session_id: uploadSessionId,
-            vendor_name: row.vendor_name || row.name || "",
-            vendor_code: row.vendor_code || row.code || "",
-            error_type: 'missing_valid_phone',
-            error_details: `No valid phone found in: ${phoneValue}`,
-            raw_data: { phone: phoneValue, ...row }
-          });
-        }
-
-        return {
-          vendor_name: row.vendor_name || row.name || "",
-          vendor_code: row.vendor_code || row.code || "",
-          email: emailData.primary,
-          phone: phoneData.primary,
-          msme_status: row.msme_status || "Others",
-          msme_category: row.msme_category || null,
-          business_category: row.business_category || null,
-          location: row.location || null,
-          udyam_number: row.udyam_number || null,
-          opening_balance: row.opening_balance ? parseFloat(row.opening_balance) : null,
-          credit_amount: row.credit_amount ? parseFloat(row.credit_amount) : null,
-          debit_amount: row.debit_amount ? parseFloat(row.debit_amount) : null,
-          closing_balance: row.closing_balance ? parseFloat(row.closing_balance) : null,
-          emailData,
-          phoneData
-        };
-      });
-
-      // Save upload logs to database if there are any issues
+      // Save upload logs to database if there are any issues (in batches)
       if (uploadLogs.length > 0) {
+        setUploadStatus('Saving error logs...');
         const { data: userData } = await supabase.auth.getUser();
         const logsWithUser = uploadLogs.map(log => ({
           ...log,
           created_by: userData.user?.id
         }));
         
-        await supabase.from('upload_logs').insert(logsWithUser);
+        // Insert logs in batches
+        const LOG_BATCH_SIZE = 100;
+        for (let i = 0; i < logsWithUser.length; i += LOG_BATCH_SIZE) {
+          const logBatch = logsWithUser.slice(i, i + LOG_BATCH_SIZE);
+          await supabase.from('upload_logs').insert(logBatch);
+        }
       }
 
       // Generate quality report
@@ -422,8 +446,8 @@ export default function Vendors() {
       // Remove processing data before inserting to database
       const vendorData = processedData.map(({ emailData, phoneData, ...vendor }) => vendor);
 
-      // Stage 3: Validating duplicates (60%)
-      setUploadProgress(60);
+      // Stage 3: Validating duplicates (50%)
+      setUploadProgress(50);
       setUploadStatus('Checking for duplicates...');
       
       // Check for duplicate vendor codes within the upload
@@ -439,37 +463,46 @@ export default function Vendors() {
         return;
       }
 
-      // Check for existing vendor codes in database
-      const { data: existingVendors, error: checkError } = await supabase
-        .from("vendors")
-        .select("vendor_code")
-        .in("vendor_code", vendorCodes);
+      // Check for existing vendor codes in database (in batches to avoid large queries)
+      const existingCodes: string[] = [];
+      const CODE_CHECK_BATCH_SIZE = 500;
+      
+      for (let i = 0; i < vendorCodes.length; i += CODE_CHECK_BATCH_SIZE) {
+        const codeBatch = vendorCodes.slice(i, i + CODE_CHECK_BATCH_SIZE);
+        const { data: existingVendors, error: checkError } = await supabase
+          .from("vendors")
+          .select("vendor_code")
+          .in("vendor_code", codeBatch);
 
-      if (checkError) {
-        console.error("Error checking existing vendors:", checkError);
-        toast({
-          title: "Error",
-          description: "Failed to validate vendor codes",
-          variant: "destructive",
-        });
-        return;
+        if (checkError) {
+          console.error("Error checking existing vendors:", checkError);
+          toast({
+            title: "Error",
+            description: "Failed to validate vendor codes",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (existingVendors) {
+          existingCodes.push(...existingVendors.map(v => v.vendor_code));
+        }
       }
 
-      const existingCodes = existingVendors?.map(v => v.vendor_code) || [];
       const duplicateCodesInDB = vendorCodes.filter(code => existingCodes.includes(code));
 
       if (duplicateCodesInDB.length > 0) {
         toast({
           title: "Upload Failed",
-          description: `Vendor codes already exist in database: ${duplicateCodesInDB.join(', ')}. Please use unique vendor codes.`,
+          description: `Vendor codes already exist in database: ${duplicateCodesInDB.slice(0, 10).join(', ')}${duplicateCodesInDB.length > 10 ? '...' : ''}. Please use unique vendor codes.`,
           variant: "destructive",
         });
         return;
       }
 
-      // Stage 4: Final validation (80%)
-      setUploadProgress(80);
-      setUploadStatus('Finalizing data...');
+      // Stage 4: Final validation (60%)
+      setUploadProgress(60);
+      setUploadStatus('Validating records...');
       
       // Filter out records with empty vendor_code, vendor_name, or invalid email/phone
       const validVendorData = vendorData.filter(vendor => 
@@ -497,63 +530,85 @@ export default function Vendors() {
         });
       }
 
-      // Stage 5: Saving to database (100%)
-      setUploadProgress(95);
-      setUploadStatus('Saving to database...');
+      // Stage 5: Saving to database in batches (60-95%)
+      setUploadStatus(`Saving ${validVendorData.length} records to database...`);
       
-      const { error } = await supabase
-        .from("vendors")
-        .insert(validVendorData);
+      const DB_BATCH_SIZE = 50; // Smaller batch size for database operations
+      let successfulInserts = 0;
+      const failedInserts: any[] = [];
+      
+      for (let i = 0; i < validVendorData.length; i += DB_BATCH_SIZE) {
+        const batch = validVendorData.slice(i, i + DB_BATCH_SIZE);
+        const batchProgress = 60 + ((i + batch.length) / validVendorData.length) * 35; // 60-95%
+        setUploadProgress(batchProgress);
+        setUploadStatus(`Saving batch ${Math.floor(i / DB_BATCH_SIZE) + 1} of ${Math.ceil(validVendorData.length / DB_BATCH_SIZE)} (${i + 1}-${Math.min(i + DB_BATCH_SIZE, validVendorData.length)} records)...`);
+        
+        try {
+          const { error } = await supabase
+            .from("vendors")
+            .insert(batch);
 
-      if (error) {
-        console.error("Database error:", error);
-        if (error.code === '23505') {
-          toast({
-            title: "Upload Failed",
-            description: "Duplicate vendor codes detected. Please ensure all vendor codes are unique.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Upload Failed",
-            description: `Database error: ${error.message}`,
-            variant: "destructive",
-          });
+          if (error) {
+            console.error(`Database error for batch ${i / DB_BATCH_SIZE + 1}:`, error);
+            failedInserts.push(...batch);
+            
+            // Continue with next batch unless it's a critical error
+            if (error.code !== '23505') { // Not a duplicate error
+              throw error;
+            }
+          } else {
+            successfulInserts += batch.length;
+          }
+        } catch (error) {
+          console.error(`Critical error in batch ${i / DB_BATCH_SIZE + 1}:`, error);
+          // Try to continue with remaining batches
+          failedInserts.push(...batch);
         }
-        return;
+        
+        // Small delay between batches to prevent overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       setUploadProgress(100);
       setUploadStatus('Upload completed!');
 
-      // Show detailed success message with quality report
-      const reportMessages = [];
-      if (qualityReport.multipleEmails > 0) {
-        reportMessages.push(`${qualityReport.multipleEmails} records had multiple emails (used first valid)`);
-      }
-      if (qualityReport.multiplePhones > 0) {
-        reportMessages.push(`${qualityReport.multiplePhones} records had multiple phone numbers (used first mobile)`);
-      }
-      if (qualityReport.landlineNumbers > 0) {
-        reportMessages.push(`${qualityReport.landlineNumbers} landline numbers filtered out`);
-      }
-      if (qualityReport.invalidEmails > 0) {
-        reportMessages.push(`${qualityReport.invalidEmails} invalid emails found`);
-      }
-      if (qualityReport.invalidPhones > 0) {
-        reportMessages.push(`${qualityReport.invalidPhones} invalid phone numbers found`);
-      }
-      if (qualityReport.recordsWithoutEmail > 0) {
-        reportMessages.push(`${qualityReport.recordsWithoutEmail} records without valid email`);
-      }
-      if (qualityReport.recordsWithoutPhone > 0) {
-        reportMessages.push(`${qualityReport.recordsWithoutPhone} records without valid mobile number`);
-      }
+      // Show results
+      if (failedInserts.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `${successfulInserts} vendors uploaded successfully, ${failedInserts.length} failed. Check the error logs for details.`,
+          variant: "destructive",
+        });
+      } else {
+        // Show detailed success message with quality report
+        const reportMessages = [];
+        if (qualityReport.multipleEmails > 0) {
+          reportMessages.push(`${qualityReport.multipleEmails} records had multiple emails (used first valid)`);
+        }
+        if (qualityReport.multiplePhones > 0) {
+          reportMessages.push(`${qualityReport.multiplePhones} records had multiple phone numbers (used first mobile)`);
+        }
+        if (qualityReport.landlineNumbers > 0) {
+          reportMessages.push(`${qualityReport.landlineNumbers} landline numbers filtered out`);
+        }
+        if (qualityReport.invalidEmails > 0) {
+          reportMessages.push(`${qualityReport.invalidEmails} invalid emails found`);
+        }
+        if (qualityReport.invalidPhones > 0) {
+          reportMessages.push(`${qualityReport.invalidPhones} invalid phone numbers found`);
+        }
+        if (qualityReport.recordsWithoutEmail > 0) {
+          reportMessages.push(`${qualityReport.recordsWithoutEmail} records without valid email`);
+        }
+        if (qualityReport.recordsWithoutPhone > 0) {
+          reportMessages.push(`${qualityReport.recordsWithoutPhone} records without valid mobile number`);
+        }
 
-      toast({
-        title: "Success",
-        description: `${validVendorData.length} vendors uploaded successfully${reportMessages.length > 0 ? '. ' + reportMessages.join(', ') : ''}`,
-      });
+        toast({
+          title: "Success",
+          description: `${successfulInserts} vendors uploaded successfully${reportMessages.length > 0 ? '. ' + reportMessages.join(', ') : ''}`,
+        });
+      }
 
       fetchVendors();
     } catch (error) {
