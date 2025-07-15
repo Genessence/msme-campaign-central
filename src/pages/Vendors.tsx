@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Download, FileDown } from "lucide-react";
+import { Download, FileDown, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
@@ -23,9 +23,24 @@ export default function Vendors() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [vendorDocuments, setVendorDocuments] = useState<Record<string, any>>({});
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   console.log("Vendors component rendering...");
+
+  // Filter vendors based on search term
+  const filteredVendors = useMemo(() => {
+    if (!searchTerm.trim()) return vendors;
+    
+    return vendors.filter(vendor => 
+      vendor.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.vendor_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (vendor.phone && vendor.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (vendor.location && vendor.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (vendor.business_category && vendor.business_category.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [vendors, searchTerm]);
 
   useEffect(() => {
     console.log("Vendors useEffect running...");
@@ -863,16 +878,29 @@ export default function Vendors() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Vendor List ({vendors.length})</CardTitle>
-          <CardDescription>
-            All registered vendors in the system
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Vendor List ({filteredVendors.length})</CardTitle>
+            <CardDescription>
+              All registered vendors in the system
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search vendors..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 w-64"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {vendors.length === 0 ? (
+          {filteredVendors.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No vendors found. Upload some vendor data to get started.
+              {searchTerm ? 'No vendors found matching your search.' : 'No vendors found. Upload some vendor data to get started.'}
             </div>
           ) : (
             <div className="border rounded-md overflow-hidden">
@@ -891,7 +919,7 @@ export default function Vendors() {
                      </TableRow>
                    </TableHeader>
                      <TableBody>
-                       {vendors.map((vendor) => (
+                       {filteredVendors.map((vendor) => (
                          <TableRow key={vendor.id}>
                            <TableCell className="font-medium truncate max-w-[120px]">{vendor.vendor_name}</TableCell>
                            <TableCell className="truncate">{vendor.vendor_code}</TableCell>
