@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -210,78 +211,80 @@ export default function Campaigns() {
           </div>
 
           {/* Campaigns Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Campaign Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Deadline</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Loading campaigns...
-                    </TableCell>
+          <div className="border rounded-md overflow-hidden">
+            <ScrollArea className="h-[600px] w-full">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="sticky top-0 bg-background border-b">Campaign Name</TableHead>
+                    <TableHead className="sticky top-0 bg-background border-b">Status</TableHead>
+                    <TableHead className="sticky top-0 bg-background border-b">Progress</TableHead>
+                    <TableHead className="sticky top-0 bg-background border-b">Deadline</TableHead>
+                    <TableHead className="sticky top-0 bg-background border-b">Created</TableHead>
+                    <TableHead className="text-right sticky top-0 bg-background border-b">Actions</TableHead>
                   </TableRow>
-                ) : filteredCampaigns.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No campaigns found. Create your first campaign to get started.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCampaigns.map((campaign) => (
-                    <TableRow key={campaign.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{campaign.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {campaign.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={getStatusColor(campaign.status)}>
-                          {campaign.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm">
-                            {campaign.responded} / {campaign.totalVendors} responses
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full transition-all" 
-                              style={{ 
-                                width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
-                      <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                        >
-                          View Details
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Loading campaigns...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : filteredCampaigns.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No campaigns found. Create your first campaign to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredCampaigns.map((campaign) => (
+                      <TableRow key={campaign.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{campaign.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {campaign.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={getStatusColor(campaign.status)}>
+                            {campaign.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-sm">
+                              {campaign.responded} / {campaign.totalVendors} responses
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className="bg-primary h-2 rounded-full transition-all" 
+                                style={{ 
+                                  width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
+                        <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </div>
         </CardContent>
       </Card>
