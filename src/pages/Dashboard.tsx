@@ -5,12 +5,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
-import { useUploadLogs } from '@/hooks/useUploadLogs';
+import { useUploadLogs, useClearUploadLogs } from '@/hooks/useUploadLogs';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data: metrics, isLoading } = useDashboardMetrics();
   const { data: uploadLogs, isLoading: isLogsLoading } = useUploadLogs();
+  const clearLogsMutation = useClearUploadLogs();
+  const { toast } = useToast();
+
+  const handleClearLogs = async () => {
+    try {
+      await clearLogsMutation.mutateAsync();
+      toast({
+        title: "Success",
+        description: "Upload logs cleared successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to clear upload logs",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -169,11 +188,23 @@ export default function Dashboard() {
 
       {/* Upload Logs */}
       <Card>
-        <CardHeader>
-          <CardTitle>Upload Issues Log</CardTitle>
-          <CardDescription>
-            Track vendors with invalid email or phone numbers during upload
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Upload Issues Log</CardTitle>
+            <CardDescription>
+              Track vendors with invalid email or phone numbers during upload
+            </CardDescription>
+          </div>
+          {uploadLogs && uploadLogs.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearLogs}
+              disabled={clearLogsMutation.isPending}
+            >
+              {clearLogsMutation.isPending ? "Clearing..." : "Clear Logs"}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLogsLoading ? (

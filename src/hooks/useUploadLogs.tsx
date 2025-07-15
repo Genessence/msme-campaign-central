@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface UploadLog {
@@ -31,5 +31,26 @@ export const useUploadLogs = () => {
       return data as UploadLog[];
     },
     refetchInterval: 30000, // Refresh every 30 seconds
+  });
+};
+
+export const useClearUploadLogs = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('upload_logs')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+      
+      if (error) {
+        console.error('Error clearing upload logs:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['upload-logs'] });
+    },
   });
 };

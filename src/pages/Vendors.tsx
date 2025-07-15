@@ -456,16 +456,18 @@ export default function Vendors() {
       setUploadProgress(80);
       setUploadStatus('Finalizing data...');
       
-      // Filter out records with empty vendor_code or vendor_name
+      // Filter out records with empty vendor_code, vendor_name, or invalid email/phone
       const validVendorData = vendorData.filter(vendor => 
         vendor.vendor_code && vendor.vendor_code.trim() !== '' && 
-        vendor.vendor_name && vendor.vendor_name.trim() !== ''
+        vendor.vendor_name && vendor.vendor_name.trim() !== '' &&
+        vendor.email && vendor.email.trim() !== '' &&
+        vendor.phone && vendor.phone.trim() !== ''
       );
 
       if (validVendorData.length === 0) {
         toast({
           title: "Upload Failed",
-          description: "No valid records found. Please ensure vendor_code and vendor_name are provided.",
+          description: "No valid records found. Please ensure vendor_code, vendor_name, valid email, and valid phone number are provided.",
           variant: "destructive",
         });
         return;
@@ -475,7 +477,7 @@ export default function Vendors() {
         const skippedCount = vendorData.length - validVendorData.length;
         toast({
           title: "Warning",
-          description: `${skippedCount} records skipped due to missing vendor_code or vendor_name`,
+          description: `${skippedCount} records skipped due to missing required fields or invalid email/phone numbers`,
           variant: "destructive",
         });
       }
