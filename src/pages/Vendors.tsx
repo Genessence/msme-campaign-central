@@ -303,6 +303,10 @@ export default function Vendors() {
       setUploadProgress(40);
       setUploadStatus('Processing and validating data...');
       
+      // Generate unique upload session ID for logging
+      const uploadSessionId = crypto.randomUUID();
+      const uploadLogs: any[] = [];
+      
       const processedData = jsonData.map((row: any) => {
         console.log("Processing row:", row);
         console.log("Raw phone value:", row.phone, "Type:", typeof row.phone);
@@ -318,6 +322,54 @@ export default function Vendors() {
         const emailData = extractValidEmails(row.email || "");
         const phoneData = extractValidMobileNumbers(phoneValue);
         console.log("Phone data result:", phoneData);
+
+        // Log invalid emails
+        if (emailData.invalid.length > 0) {
+          uploadLogs.push({
+            upload_session_id: uploadSessionId,
+            vendor_name: row.vendor_name || row.name || "",
+            vendor_code: row.vendor_code || row.code || "",
+            error_type: 'invalid_email',
+            error_details: `Invalid emails: ${emailData.invalid.join(', ')}`,
+            raw_data: { email: row.email, ...row }
+          });
+        }
+
+        // Log invalid phone numbers
+        if (phoneData.invalid.length > 0) {
+          uploadLogs.push({
+            upload_session_id: uploadSessionId,
+            vendor_name: row.vendor_name || row.name || "",
+            vendor_code: row.vendor_code || row.code || "",
+            error_type: 'invalid_phone',
+            error_details: `Invalid phone numbers: ${phoneData.invalid.join(', ')}`,
+            raw_data: { phone: phoneValue, ...row }
+          });
+        }
+
+        // Log missing email
+        if (!emailData.primary && row.email) {
+          uploadLogs.push({
+            upload_session_id: uploadSessionId,
+            vendor_name: row.vendor_name || row.name || "",
+            vendor_code: row.vendor_code || row.code || "",
+            error_type: 'missing_valid_email',
+            error_details: `No valid email found in: ${row.email}`,
+            raw_data: { email: row.email, ...row }
+          });
+        }
+
+        // Log missing phone
+        if (!phoneData.primary && phoneValue) {
+          uploadLogs.push({
+            upload_session_id: uploadSessionId,
+            vendor_name: row.vendor_name || row.name || "",
+            vendor_code: row.vendor_code || row.code || "",
+            error_type: 'missing_valid_phone',
+            error_details: `No valid phone found in: ${phoneValue}`,
+            raw_data: { phone: phoneValue, ...row }
+          });
+        }
 
         return {
           vendor_name: row.vendor_name || row.name || "",
@@ -337,6 +389,17 @@ export default function Vendors() {
           phoneData
         };
       });
+
+      // Save upload logs to database if there are any issues
+      if (uploadLogs.length > 0) {
+        const { data: userData } = await supabase.auth.getUser();
+        const logsWithUser = uploadLogs.map(log => ({
+          ...log,
+          created_by: userData.user?.id
+        }));
+        
+        await supabase.from('upload_logs').insert(logsWithUser);
+      }
 
       // Generate quality report
       const qualityReport = generateDataQualityReport(processedData);

@@ -228,6 +228,42 @@ export type Database = {
         }
         Relationships: []
       }
+      upload_logs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_details: string | null
+          error_type: string
+          id: string
+          raw_data: Json | null
+          upload_session_id: string
+          vendor_code: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_details?: string | null
+          error_type: string
+          id?: string
+          raw_data?: Json | null
+          upload_session_id?: string
+          vendor_code?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_details?: string | null
+          error_type?: string
+          id?: string
+          raw_data?: Json | null
+          upload_session_id?: string
+          vendor_code?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           business_category: string | null

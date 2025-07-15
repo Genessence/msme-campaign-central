@@ -1,12 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useUploadLogs } from '@/hooks/useUploadLogs';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data: metrics, isLoading } = useDashboardMetrics();
+  const { data: uploadLogs, isLoading: isLogsLoading } = useUploadLogs();
 
   return (
     <div className="space-y-6">
@@ -158,6 +162,76 @@ export default function Dashboard() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               No recent activity to show. Start by creating your first campaign or adding vendors.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Upload Logs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Issues Log</CardTitle>
+          <CardDescription>
+            Track vendors with invalid email or phone numbers during upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLogsLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading upload logs...</div>
+          ) : uploadLogs && uploadLogs.length > 0 ? (
+            <div className="border rounded-md overflow-hidden">
+              <ScrollArea className="h-[400px] w-full">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[150px]">Vendor Name</TableHead>
+                      <TableHead className="w-[100px]">Vendor Code</TableHead>
+                      <TableHead className="w-[120px]">Issue Type</TableHead>
+                      <TableHead className="w-[200px]">Details</TableHead>
+                      <TableHead className="w-[120px]">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {uploadLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-medium truncate">
+                          {log.vendor_name || '—'}
+                        </TableCell>
+                        <TableCell className="truncate">
+                          {log.vendor_code || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              log.error_type.includes('email') 
+                                ? 'bg-red-50 text-red-700 border-red-200' 
+                                : 'bg-orange-50 text-orange-700 border-orange-200'
+                            }`}
+                          >
+                            {log.error_type.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="truncate max-w-[200px]" title={log.error_details || ''}>
+                          {log.error_details || '—'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(log.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No upload issues found. All vendor data has been processed without errors.
             </div>
           )}
         </CardContent>
