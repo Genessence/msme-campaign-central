@@ -79,9 +79,11 @@ export default function Vendors() {
       const { data, error } = await supabase
         .from("vendors")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(5000); // Increase limit to handle large datasets
 
       console.log("Vendors fetch result:", { data, error });
+      console.log("Vendors count:", data?.length);
 
       if (error) throw error;
       setVendors(data || []);
@@ -935,7 +937,7 @@ export default function Vendors() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Vendor List ({filteredVendors.length})</CardTitle>
+            <CardTitle>Vendor List ({filteredVendors.length} of {vendors.length})</CardTitle>
             <CardDescription>
               All registered vendors in the system
             </CardDescription>
