@@ -67,6 +67,16 @@ export default function Templates() {
         return;
       }
 
+      // Clear template references from completed campaigns
+      const templateField = type === 'email' ? 'email_template_id' : 'whatsapp_template_id';
+      const { error: updateError } = await supabase
+        .from('msme_campaigns')
+        .update({ [templateField]: null })
+        .eq(templateField, id)
+        .neq('status', 'Active');
+
+      if (updateError) throw updateError;
+
       const { error } = await supabase
         .from(type === 'email' ? 'email_templates' : 'whatsapp_templates')
         .delete()
