@@ -84,7 +84,7 @@ export default function CampaignDetails() {
       if (campaignError) throw campaignError;
       setCampaign(campaignData);
 
-      // Fetch vendor responses with vendor details
+      // Fetch vendor responses with vendor details - focusing on MSME submissions
       const { data: responsesData, error: responsesError } = await supabase
         .from('msme_responses')
         .select(`
@@ -98,7 +98,8 @@ export default function CampaignDetails() {
             phone
           )
         `)
-        .eq('campaign_id', id);
+        .eq('campaign_id', id)
+        .eq('response_status', 'Completed'); // Only get completed MSME submissions
 
       if (responsesError) throw responsesError;
 
@@ -180,9 +181,8 @@ export default function CampaignDetails() {
   }
 
   const totalVendors = campaign.target_vendors?.length || 0;
-  const completedResponses = vendorResponses.filter(r => r.response_status === 'Completed').length;
-  const pendingResponses = vendorResponses.filter(r => r.response_status === 'Pending').length;
-  const partialResponses = vendorResponses.filter(r => r.response_status === 'Partial').length;
+  const completedResponses = vendorResponses.length; // Now only contains completed MSME submissions
+  const pendingResponses = totalVendors - completedResponses; // Vendors who haven't submitted yet
   const progressPercentage = totalVendors > 0 ? (completedResponses / totalVendors) * 100 : 0;
 
   return (
@@ -229,10 +229,10 @@ export default function CampaignDetails() {
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedResponses}</div>
-            <p className="text-xs text-muted-foreground">Responses submitted</p>
-          </CardContent>
+           <CardContent>
+             <div className="text-2xl font-bold">{completedResponses}</div>
+             <p className="text-xs text-muted-foreground">MSME forms submitted</p>
+           </CardContent>
         </Card>
 
         <Card>
@@ -267,12 +267,12 @@ export default function CampaignDetails() {
 
         <TabsContent value="responses">
           <Card>
-            <CardHeader>
-              <CardTitle>Vendor Responses</CardTitle>
-              <CardDescription>
-                Track the status of responses from all targeted vendors
-              </CardDescription>
-            </CardHeader>
+           <CardHeader>
+             <CardTitle>MSME Form Submissions</CardTitle>
+             <CardDescription>
+               Track vendors who have successfully submitted their MSME status updates
+             </CardDescription>
+           </CardHeader>
             <CardContent>
               <div className="rounded-md border">
                 <Table>

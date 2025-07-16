@@ -70,12 +70,14 @@ export default function Campaigns() {
         (campaignsData || []).map(async (campaign) => {
           const totalVendors = campaign.target_vendors?.length || 0;
           
-          const { data: responses, error: responsesError } = await supabase
-            .from('msme_responses')
-            .select('response_status')
-            .eq('campaign_id', campaign.id);
+          // Get email sending progress instead of response progress
+          const { data: emailSends, error: emailError } = await supabase
+            .from('campaign_email_sends')
+            .select('vendor_id')
+            .eq('campaign_id', campaign.id)
+            .eq('status', 'sent');
 
-          const responded = responses?.filter(r => r.response_status === 'Completed').length || 0;
+          const emailsSent = emailSends?.length || 0;
 
           return {
             id: campaign.id,
@@ -83,7 +85,7 @@ export default function Campaigns() {
             description: campaign.description,
             status: campaign.status || 'Draft',
             totalVendors,
-            responded,
+            responded: emailsSent, // Now represents emails sent instead of responses
             deadline: campaign.deadline,
             created_at: campaign.created_at,
           };
@@ -175,17 +177,17 @@ export default function Campaigns() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {campaigns.reduce((sum, c) => sum + c.responded, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Across all campaigns</p>
-          </CardContent>
-        </Card>
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Total Emails Sent</CardTitle>
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">
+               {campaigns.reduce((sum, c) => sum + c.responded, 0)}
+             </div>
+             <p className="text-xs text-muted-foreground">Across all campaigns</p>
+           </CardContent>
+         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -278,21 +280,21 @@ export default function Campaigns() {
                             {campaign.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">
-                              {campaign.responded} / {campaign.totalVendors} responses
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full transition-all" 
-                                style={{ 
-                                  width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           <div className="space-y-1">
+                             <div className="text-sm">
+                               {campaign.responded} / {campaign.totalVendors} emails sent
+                             </div>
+                             <div className="w-full bg-muted rounded-full h-2">
+                               <div 
+                                 className="bg-primary h-2 rounded-full transition-all" 
+                                 style={{ 
+                                   width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
+                                 }}
+                               />
+                             </div>
+                           </div>
+                         </TableCell>
                         <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
                         <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
                          <TableCell className="text-right">

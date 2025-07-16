@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_email_sends: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email_type: string
+          id: string
+          sent_at: string
+          status: string
+          vendor_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email_type: string
+          id?: string
+          sent_at?: string
+          status?: string
+          vendor_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email_type?: string
+          id?: string
+          sent_at?: string
+          status?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_email_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "msme_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_email_sends_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_uploads: {
         Row: {
           campaign_id: string | null
