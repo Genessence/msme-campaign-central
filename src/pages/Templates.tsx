@@ -49,6 +49,23 @@ export default function Templates() {
 
   const handleDeleteTemplate = async (type: 'email' | 'whatsapp', id: string) => {
     try {
+      // Check if template is being used by any campaign
+      const { data: campaigns, error: campaignError } = await supabase
+        .from('msme_campaigns')
+        .select('id, name')
+        .eq(type === 'email' ? 'email_template_id' : 'whatsapp_template_id', id);
+
+      if (campaignError) throw campaignError;
+
+      if (campaigns && campaigns.length > 0) {
+        toast({
+          title: "Cannot Delete Template",
+          description: `This template is being used by ${campaigns.length} campaign(s). Please remove it from campaigns first.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from(type === 'email' ? 'email_templates' : 'whatsapp_templates')
         .delete()
