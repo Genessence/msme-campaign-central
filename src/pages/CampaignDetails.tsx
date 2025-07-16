@@ -125,6 +125,34 @@ export default function CampaignDetails() {
     }
   };
 
+  const handleEndCampaign = async () => {
+    if (!campaign) return;
+    
+    try {
+      const { error } = await supabase
+        .from('msme_campaigns')
+        .update({ status: 'Completed' })
+        .eq('id', campaign.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Ended",
+        description: `Campaign "${campaign.name}" has been successfully ended.`,
+      });
+
+      // Refresh campaign details
+      fetchCampaignDetails();
+    } catch (error) {
+      console.error('Error ending campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to end campaign. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -171,9 +199,16 @@ export default function CampaignDetails() {
             <p className="text-muted-foreground">{campaign.description}</p>
           </div>
         </div>
-        <Badge variant="outline" className={getStatusColor(campaign.status)}>
-          {campaign.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={getStatusColor(campaign.status)}>
+            {campaign.status}
+          </Badge>
+          {campaign.status === 'Active' && (
+            <Button variant="destructive" onClick={handleEndCampaign}>
+              End Campaign
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Overview Cards */}

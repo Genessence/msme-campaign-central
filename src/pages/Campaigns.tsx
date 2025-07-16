@@ -103,6 +103,31 @@ export default function Campaigns() {
     }
   };
 
+  const handleEndCampaign = async (campaignId: string, campaignName: string) => {
+    try {
+      const { error } = await supabase
+        .from('msme_campaigns')
+        .update({ status: 'Completed' })
+        .eq('id', campaignId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Ended",
+        description: `Campaign "${campaignName}" has been successfully ended.`,
+      });
+
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Error ending campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to end campaign. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (campaign.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
@@ -270,15 +295,26 @@ export default function Campaigns() {
                         </TableCell>
                         <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
                         <TableCell>{new Date(campaign.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                          >
-                            View Details
-                          </Button>
-                        </TableCell>
+                         <TableCell className="text-right">
+                           <div className="flex justify-end gap-2">
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                             >
+                               View Details
+                             </Button>
+                             {campaign.status === 'Active' && (
+                               <Button 
+                                 variant="destructive" 
+                                 size="sm"
+                                 onClick={() => handleEndCampaign(campaign.id, campaign.name)}
+                               >
+                                 End Campaign
+                               </Button>
+                             )}
+                           </div>
+                         </TableCell>
                       </TableRow>
                     ))
                   )}
