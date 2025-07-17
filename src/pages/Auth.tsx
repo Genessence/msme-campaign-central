@@ -5,40 +5,48 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { error } = await signIn(email, password);
+      const { error } = isLogin 
+        ? await signIn(email, password)
+        : await signUp(email, password, fullName);
+      
       if (error) {
         toast({
           variant: "destructive",
-          title: "Sign In Failed",
+          title: isLogin ? "Sign In Failed" : "Registration Failed",
           description: error.message,
         });
       } else {
         toast({
-          title: "Welcome!",
-          description: "You have been signed in successfully.",
+          title: isLogin ? "Welcome!" : "Registration Successful",
+          description: isLogin 
+            ? "You have been signed in successfully." 
+            : "Your account has been created.",
         });
         navigate('/');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "An error occurred",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
       });
     } finally {
       setLoading(false);
@@ -59,16 +67,37 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Login/Signup Card */}
         <Card className="backdrop-blur-sm bg-card/95 border-border/50 shadow-xl">
           <CardHeader className="text-center pb-6">
-            <CardTitle className="text-xl">Welcome Back</CardTitle>
+            <CardTitle className="text-xl">
+              {isLogin ? 'Welcome Back' : 'Create an Account'}
+            </CardTitle>
             <CardDescription>
-              Sign in to access your MSME management dashboard
+              {isLogin 
+                ? 'Sign in to access your MSME management dashboard'
+                : 'Register to start using the system'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-sm font-medium">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="h-11"
+                    required={!isLogin}
+                    disabled={loading}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -81,6 +110,7 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11"
                   required
+                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
@@ -95,6 +125,7 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11"
                   required
+                  disabled={loading}
                 />
               </div>
               <Button 
@@ -102,8 +133,22 @@ export default function Auth() {
                 className="w-full h-11 text-base font-medium" 
                 disabled={loading}
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading 
+                  ? 'Processing...' 
+                  : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
+              <div className="text-center">
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  onClick={() => setIsLogin(!isLogin)}
+                  disabled={loading}
+                >
+                  {isLogin 
+                    ? 'Need an account? Register' 
+                    : 'Already have an account? Sign In'}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
