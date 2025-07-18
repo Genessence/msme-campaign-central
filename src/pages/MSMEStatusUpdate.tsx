@@ -15,7 +15,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import amberLogo from '@/assets/amber-logo.png';
 
 // Zod schema for form validation
 const msmeFormSchema = z.object({
@@ -426,7 +425,7 @@ export default function MSMEStatusUpdate() {
           <div className="text-center mb-8">
             <div className="mb-4">
               <img 
-                src={amberLogo} 
+                src="/lovable-uploads/54d835ce-b7c1-4495-b0e3-f8050cbea30d.png" 
                 alt="Amber Logo" 
                 className="w-48 h-18 mx-auto object-contain mb-6"
               />
