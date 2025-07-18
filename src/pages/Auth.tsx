@@ -58,8 +58,12 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Brand Section */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <div className="text-primary-foreground font-bold text-2xl">M</div>
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/900ad8a0-dc6a-4f1d-9987-9f706b27bdf3.png" 
+              alt="Amber Logo" 
+              className="h-16 w-auto"
+            />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Amber Compliance System</h1>
           <p className="text-muted-foreground">
