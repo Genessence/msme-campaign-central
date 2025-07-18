@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import amberLogo from '@/assets/amber-logo.png';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -53,7 +52,7 @@ export default function Auth() {
         <div className="text-center space-y-2">
           <div className="mb-4">
             <img 
-              src={amberLogo} 
+              src="/lovable-uploads/2452e4f1-dd25-457e-aff3-ce2513dc4360.png" 
               alt="Amber Logo" 
               className="w-32 h-12 mx-auto object-contain"
             />
