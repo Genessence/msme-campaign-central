@@ -423,13 +423,13 @@ export default function MSMEStatusUpdate() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
+            <div className="flex flex-col items-center justify-center mb-4">
               <img 
                 src="/lovable-uploads/900ad8a0-dc6a-4f1d-9987-9f706b27bdf3.png" 
                 alt="Amber Logo" 
-                className="h-16 w-auto mr-4"
+                className="h-16 w-auto mb-4"
               />
-              <div>
+              <div className="text-center">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   MSME Status Portal
                 </h1>
