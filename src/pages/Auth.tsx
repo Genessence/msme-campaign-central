@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import amberLogo from '@/assets/amber-logo.png';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -50,8 +51,12 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Brand Section */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <div className="text-primary-foreground font-bold text-2xl">M</div>
+          <div className="mb-4">
+            <img 
+              src={amberLogo} 
+              alt="Amber Logo" 
+              className="w-32 h-12 mx-auto object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Amber Compliance System</h1>
           <p className="text-muted-foreground">
