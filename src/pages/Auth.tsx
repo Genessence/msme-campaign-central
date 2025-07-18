@@ -5,48 +5,40 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password, fullName);
-      
+      const { error } = await signIn(email, password);
       if (error) {
         toast({
           variant: "destructive",
-          title: isLogin ? "Sign In Failed" : "Registration Failed",
+          title: "Sign In Failed",
           description: error.message,
         });
       } else {
         toast({
-          title: isLogin ? "Welcome!" : "Registration Successful",
-          description: isLogin 
-            ? "You have been signed in successfully." 
-            : "Your account has been created.",
+          title: "Welcome!",
+          description: "You have been signed in successfully.",
         });
         navigate('/');
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "An error occurred",
-        description: error.message || "Please try again later.",
+        description: "Please try again later.",
       });
     } finally {
       setLoading(false);
@@ -58,12 +50,8 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Brand Section */}
         <div className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/900ad8a0-dc6a-4f1d-9987-9f706b27bdf3.png" 
-              alt="Amber Logo" 
-              className="h-16 w-auto"
-            />
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="text-primary-foreground font-bold text-2xl">M</div>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Amber Compliance System</h1>
           <p className="text-muted-foreground">
@@ -71,37 +59,16 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Login/Signup Card */}
+        {/* Login Card */}
         <Card className="backdrop-blur-sm bg-card/95 border-border/50 shadow-xl">
           <CardHeader className="text-center pb-6">
-            <CardTitle className="text-xl">
-              {isLogin ? 'Welcome Back' : 'Create an Account'}
-            </CardTitle>
+            <CardTitle className="text-xl">Welcome Back</CardTitle>
             <CardDescription>
-              {isLogin 
-                ? 'Sign in to access your MSME management dashboard'
-                : 'Register to start using the system'}
+              Sign in to access your MSME management dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium">
-                    Full Name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="h-11"
-                    required={!isLogin}
-                    disabled={loading}
-                  />
-                </div>
-              )}
+            <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -114,7 +81,6 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11"
                   required
-                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
@@ -129,7 +95,6 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11"
                   required
-                  disabled={loading}
                 />
               </div>
               <Button 
@@ -137,22 +102,8 @@ export default function Auth() {
                 className="w-full h-11 text-base font-medium" 
                 disabled={loading}
               >
-                {loading 
-                  ? 'Processing...' 
-                  : (isLogin ? 'Sign In' : 'Create Account')}
+                {loading ? 'Signing In...' : 'Sign In'}
               </Button>
-              <div className="text-center">
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  onClick={() => setIsLogin(!isLogin)}
-                  disabled={loading}
-                >
-                  {isLogin 
-                    ? 'Need an account? Register' 
-                    : 'Already have an account? Sign In'}
-                </Button>
-              </div>
             </form>
           </CardContent>
         </Card>

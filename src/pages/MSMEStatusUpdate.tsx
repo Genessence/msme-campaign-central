@@ -423,13 +423,11 @@ export default function MSMEStatusUpdate() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="flex flex-col items-center justify-center mb-4">
-              <img 
-                src="/lovable-uploads/900ad8a0-dc6a-4f1d-9987-9f706b27bdf3.png" 
-                alt="Amber Logo" 
-                className="h-16 w-auto mb-4"
-              />
-              <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-full shadow-lg">
+                <Building className="h-12 w-12 text-white" />
+              </div>
+              <div className="ml-4">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   MSME Status Portal
                 </h1>
@@ -738,7 +736,7 @@ export default function MSMEStatusUpdate() {
               © 2024 Amber Compliance System
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              In case of any query, please contact the Amber sourcing team
+              For technical support, contact: <a href="mailto:support@amber.com" className="text-blue-600 hover:text-blue-800">support@amber.com</a>
             </p>
           </div>
         </div>
