@@ -19,6 +19,8 @@ import ChangePassword from "./pages/ChangePassword";
 import MSMEStatusUpdate from "./pages/MSMEStatusUpdate";
 import Forms from "./pages/Forms";
 import CreateForm from "./pages/CreateForm";
+import EditForm from "./pages/EditForm";
+import FormResponses from "./pages/FormResponses";
 import PublicForm from "./pages/PublicForm";
 import Analytics from "./pages/Analytics";
 import Layout from "./components/Layout";
@@ -106,6 +108,16 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/forms/:slug" element={<PublicForm />} />
+            <Route path="/forms/:id/edit" element={
+              <ProtectedRoute>
+                <EditForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/forms/:id/responses" element={
+              <ProtectedRoute>
+                <FormResponses />
+              </ProtectedRoute>
+            } />
             <Route path="/vendors" element={
               <ProtectedRoute>
                 <Vendors />
