@@ -21,6 +21,10 @@ interface FormField {
   is_required: boolean;
   validation_rules: any;
   options: any;
+  conditional_logic?: {
+    show_when_field: string;
+    show_when_value: string;
+  };
 }
 
 interface FormData {
@@ -85,6 +89,7 @@ export default function CreateForm() {
       is_required: false,
       validation_rules: {},
       options: {},
+      conditional_logic: undefined,
     };
 
     setFormData(prev => ({
@@ -154,6 +159,7 @@ export default function CreateForm() {
         is_required: field.is_required,
         validation_rules: field.validation_rules,
         options: field.options,
+        conditional_logic: field.conditional_logic,
         order_index: index,
       }));
 
@@ -392,6 +398,73 @@ export default function CreateForm() {
                                     }
                                   />
                                   <Label htmlFor={`required-${field.id}`}>Required field</Label>
+                                </div>
+
+                                {/* Options for select, radio, checkbox fields */}
+                                {['select', 'radio', 'checkbox'].includes(field.field_type) && (
+                                  <div className="space-y-2 col-span-2">
+                                    <Label>Options (one per line)</Label>
+                                    <Textarea
+                                      value={Array.isArray(field.options) ? field.options.join('\n') : ''}
+                                      onChange={(e) => updateField(field.id, { 
+                                        options: e.target.value.split('\n').filter(opt => opt.trim()) 
+                                      })}
+                                      placeholder="Option 1&#10;Option 2&#10;Option 3"
+                                      rows={3}
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Conditional Logic */}
+                                <div className="space-y-3 col-span-2 p-3 bg-muted/50 rounded-lg">
+                                  <Label className="text-sm font-medium">Conditional Logic (Optional)</Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    Show this field only when another field has a specific value
+                                  </p>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Show when field:</Label>
+                                      <Select
+                                        value={field.conditional_logic?.show_when_field || ''}
+                                        onValueChange={(value) => updateField(field.id, { 
+                                          conditional_logic: value ? {
+                                            show_when_field: value,
+                                            show_when_value: field.conditional_logic?.show_when_value || ''
+                                          } : undefined
+                                        })}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select field" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="">None</SelectItem>
+                                          {formData.fields
+                                            .filter(f => f.id !== field.id && ['select', 'radio'].includes(f.field_type))
+                                            .map(f => (
+                                              <SelectItem key={f.id} value={f.field_name}>
+                                                {f.label}
+                                              </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Equals value:</Label>
+                                      <Input
+                                        value={field.conditional_logic?.show_when_value || ''}
+                                        onChange={(e) => updateField(field.id, { 
+                                          conditional_logic: field.conditional_logic ? {
+                                            ...field.conditional_logic,
+                                            show_when_value: e.target.value
+                                          } : undefined
+                                        })}
+                                        placeholder="Enter value"
+                                        disabled={!field.conditional_logic?.show_when_field}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>

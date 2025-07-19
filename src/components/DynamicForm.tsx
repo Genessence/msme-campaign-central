@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
+import { FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,6 +22,10 @@ interface FormField {
   validation_rules: any;
   options: any;
   order_index: number;
+  conditional_logic?: {
+    show_when_field: string;
+    show_when_value: string;
+  };
 }
 
 interface CustomForm {
@@ -43,12 +49,21 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const sortedFields = [...fields].sort((a, b) => a.order_index - b.order_index);
+  const watchedValues = watch();
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
+    setUploadProgress(0);
+
     try {
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
       const { error } = await supabase
         .from('form_responses')
         .insert({
@@ -56,18 +71,25 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
           campaign_id: campaignId,
           vendor_id: vendorId,
           response_data: data,
+          submitted_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Form submitted successfully!",
-      });
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      setTimeout(() => {
+        toast({
+          title: "Success",
+          description: "Form submitted successfully!",
+        });
+
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 500);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -80,7 +102,18 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
     }
   };
 
+  // Check if field should be shown based on conditional logic
+  const shouldShowField = (field: FormField) => {
+    if (!field.conditional_logic) return true;
+    
+    const { show_when_field, show_when_value } = field.conditional_logic;
+    const watchedValue = watchedValues[show_when_field];
+    return watchedValue === show_when_value;
+  };
+
   const renderField = (field: FormField) => {
+    if (!shouldShowField(field)) return null;
+
     const fieldProps = {
       ...register(field.field_name, {
         required: field.is_required ? `${field.label} is required` : false,
@@ -144,9 +177,17 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
                 <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="option1">Option 1</SelectItem>
-                <SelectItem value="option2">Option 2</SelectItem>
-                <SelectItem value="option3">Option 3</SelectItem>
+                {field.options?.map((option: string, index: number) => (
+                  <SelectItem key={index} value={option}>
+                    {option}
+                  </SelectItem>
+                )) || (
+                  <>
+                    <SelectItem value="option1">Option 1</SelectItem>
+                    <SelectItem value="option2">Option 2</SelectItem>
+                    <SelectItem value="option3">Option 3</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
             {errors[field.field_name] && (
@@ -256,22 +297,54 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>{form.title}</CardTitle>
-        {form.description && (
-          <p className="text-muted-foreground">{form.description}</p>
-        )}
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {sortedFields.map(renderField)}
-          
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <Card className="shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FileText className="h-6 w-6 text-primary" />
+                {form.title}
+              </CardTitle>
+              {form.description && (
+                <p className="text-muted-foreground mt-2">{form.description}</p>
+              )}
+            </CardHeader>
+            <CardContent className="p-8">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                {sortedFields.map(renderField)}
+                
+                {isSubmitting && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Submitting form...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                  </div>
+                )}
+                
+                <div className="flex gap-4 pt-6 border-t">
+                  <Button 
+                    type="submit" 
+                    className="flex-1 h-12 text-base font-medium" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                        Submitting...
+                      </div>
+                    ) : (
+                      "Submit Form"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
