@@ -150,14 +150,14 @@ export function CampaignBasicInfo({ data, onUpdate, onNext }: CampaignBasicInfoP
           <div className="space-y-2">
             <Label htmlFor="form">Form Selection (Optional)</Label>
             <Select
-              value={data.form_id || ""}
-              onValueChange={(value) => onUpdate({ form_id: value || undefined })}
+              value={data.form_id || "none"}
+              onValueChange={(value) => onUpdate({ form_id: value === "none" ? undefined : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a form or leave empty for communication only" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No form (Communication only)</SelectItem>
+                <SelectItem value="none">No form (Communication only)</SelectItem>
                 {availableForms.map((form) => (
                   <SelectItem key={form.id} value={form.id}>
                     {form.name}
