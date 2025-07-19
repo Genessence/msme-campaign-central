@@ -17,6 +17,9 @@ import CreateWhatsAppTemplate from "./pages/CreateWhatsAppTemplate";
 import EditWhatsAppTemplate from "./pages/EditWhatsAppTemplate";
 import ChangePassword from "./pages/ChangePassword";
 import MSMEStatusUpdate from "./pages/MSMEStatusUpdate";
+import Forms from "./pages/Forms";
+import CreateForm from "./pages/CreateForm";
+import PublicForm from "./pages/PublicForm";
 import Analytics from "./pages/Analytics";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
@@ -92,6 +95,17 @@ const App = () => (
                 <CampaignDetails />
               </ProtectedRoute>
             } />
+            <Route path="/forms" element={
+              <ProtectedRoute>
+                <Forms />
+              </ProtectedRoute>
+            } />
+            <Route path="/forms/create" element={
+              <ProtectedRoute>
+                <CreateForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/forms/:slug" element={<PublicForm />} />
             <Route path="/vendors" element={
               <ProtectedRoute>
                 <Vendors />
