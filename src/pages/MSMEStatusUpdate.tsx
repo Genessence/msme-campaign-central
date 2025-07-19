@@ -107,6 +107,7 @@ export default function MSMEStatusUpdate() {
         const attemptFetch = async (): Promise<void> => {
           try {
             attempts++;
+            console.log(`Searching for vendor code: "${vendorCode}" (attempt ${attempts})`);
             
             // Case-insensitive search for vendor code
             const { data: vendor, error } = await supabase
@@ -115,12 +116,15 @@ export default function MSMEStatusUpdate() {
               .ilike('vendor_code', vendorCode)
               .maybeSingle();
 
+            console.log('Search result:', { vendor, error });
+
             if (error) {
               console.error('Supabase error:', error);
               throw error;
             }
 
             if (vendor) {
+              console.log('Vendor found:', vendor);
               setValue('vendorName', vendor.vendor_name);
               setValue('businessAddress', vendor.location || '');
               toast({
@@ -128,12 +132,15 @@ export default function MSMEStatusUpdate() {
                 description: `Details loaded for ${vendor.vendor_name}`,
               });
             } else {
+              console.log('No vendor found with ilike, trying exact match...');
               // Try exact match as fallback
               const { data: exactVendor, error: exactError } = await supabase
                 .from('vendors')
                 .select('vendor_name, location')
                 .eq('vendor_code', vendorCode)
                 .maybeSingle();
+                
+              console.log('Exact match result:', { exactVendor, exactError });
                 
               if (exactVendor && !exactError) {
                 setValue('vendorName', exactVendor.vendor_name);
@@ -143,9 +150,17 @@ export default function MSMEStatusUpdate() {
                   description: `Details loaded for ${exactVendor.vendor_name}`,
                 });
               } else if (attempts === maxAttempts) {
+                // Log some existing vendor codes for debugging
+                const { data: sampleVendors } = await supabase
+                  .from('vendors')
+                  .select('vendor_code')
+                  .limit(5);
+                
+                console.log('Sample vendor codes in database:', sampleVendors?.map(v => v.vendor_code));
+                
                 toast({
                   title: "Vendor Not Found",
-                  description: "Please check the vendor code and try again.",
+                  description: `No vendor found with code "${vendorCode}". Please check the code and try again.`,
                   variant: "destructive",
                 });
               }
