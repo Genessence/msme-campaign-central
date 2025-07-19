@@ -425,20 +425,20 @@ export default function CreateForm() {
                                   <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-2">
                                       <Label className="text-xs">Show when field:</Label>
-                                      <Select
-                                        value={field.conditional_logic?.show_when_field || ''}
-                                        onValueChange={(value) => updateField(field.id, { 
-                                          conditional_logic: value ? {
-                                            show_when_field: value,
-                                            show_when_value: field.conditional_logic?.show_when_value || ''
-                                          } : undefined
-                                        })}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select field" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="">None</SelectItem>
+                                       <Select
+                                         value={field.conditional_logic?.show_when_field || 'none'}
+                                         onValueChange={(value) => updateField(field.id, { 
+                                           conditional_logic: value !== 'none' ? {
+                                             show_when_field: value,
+                                             show_when_value: field.conditional_logic?.show_when_value || ''
+                                           } : undefined
+                                         })}
+                                       >
+                                         <SelectTrigger>
+                                           <SelectValue placeholder="Select field" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                           <SelectItem value="none">None</SelectItem>
                                           {formData.fields
                                             .filter(f => f.id !== field.id && ['select', 'radio'].includes(f.field_type))
                                             .map(f => (
