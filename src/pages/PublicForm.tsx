@@ -197,22 +197,28 @@ export default function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-6 shadow-lg">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center gap-3">
-            <img src={amberLogo} alt="Amber" className="h-10 w-auto" />
-            <div className="text-center">
-              <h1 className="text-xl font-bold">Amber Compliance</h1>
-              <p className="text-sm opacity-90">Digital Form System</p>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Logo - centered */}
+      <div className="py-8 text-center">
+        <img src={amberLogo} alt="Amber" className="h-16 w-auto mx-auto mb-4" />
+        <h1 className="text-4xl font-bold text-blue-600 mb-2">{form.title}</h1>
+        <p className="text-gray-600 text-lg">Amber Compliance System</p>
+      </div>
+
+      {/* Info Section */}
+      <div className="max-w-4xl mx-auto px-4 mb-8">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+          <div className="text-blue-800">
+            <p className="leading-relaxed">
+              {form.description || "Please provide the required information. All information provided will be kept confidential and used for official purposes only."}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="py-8">
+      <div className="max-w-4xl mx-auto px-4 pb-8">
         <DynamicForm
           form={form}
           fields={fields}
@@ -221,15 +227,10 @@ export default function PublicForm() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-muted/30 border-t py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-            <Building className="h-4 w-4" />
-            <span>Powered by Amber Compliance System</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Secure • Reliable • Compliant
-          </p>
+      <footer className="bg-white border-t py-6 mt-12">
+        <div className="text-center">
+          <p className="text-gray-600 text-sm mb-1">© 2024 Amber Compliance System</p>
+          <p className="text-gray-500 text-sm">In case of any query, please contact the Amber Sourcing Team</p>
         </div>
       </footer>
     </div>
