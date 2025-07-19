@@ -297,53 +297,49 @@ export function DynamicForm({ form, fields, onSuccess, campaignId, vendorId }: D
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <FileText className="h-6 w-6 text-primary" />
-                {form.title}
-              </CardTitle>
-              {form.description && (
-                <p className="text-muted-foreground mt-2">{form.description}</p>
-              )}
-            </CardHeader>
-            <CardContent className="p-8">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                {sortedFields.map(renderField)}
-                
-                {isSubmitting && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Submitting form...</span>
-                      <span>{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-2" />
-                  </div>
-                )}
-                
-                <div className="flex gap-4 pt-6 border-t">
-                  <Button 
-                    type="submit" 
-                    className="flex-1 h-12 text-base font-medium" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                        Submitting...
-                      </div>
-                    ) : (
-                      "Submit Form"
-                    )}
-                  </Button>
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      {/* Form Header with Gradient */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4">
+        <h2 className="text-xl font-semibold">{form.title}</h2>
+        <p className="text-blue-100 text-sm mt-1">
+          {form.description || "Please provide your business information and current MSME status"}
+        </p>
+      </div>
+
+      {/* Form Content */}
+      <div className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            {sortedFields.map(renderField)}
+          </div>
+          
+          {isSubmitting && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Submitting form...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          )}
+          
+          <div className="flex justify-center pt-6">
+            <Button 
+              type="submit" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-3 rounded-lg font-medium text-base"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Submitting...
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

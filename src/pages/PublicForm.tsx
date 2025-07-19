@@ -4,7 +4,7 @@ import { DynamicForm } from "@/components/DynamicForm";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, AlertCircle, Building, FileText } from "lucide-react";
-import amberLogo from "@/assets/amber-logo.png";
+import amberLogo from "/lovable-uploads/768627d0-94eb-46d7-bf53-e2ff35bcf812.png";
 
 interface FormField {
   id: string;
