@@ -98,103 +98,31 @@ export default function MSMEStatusUpdate() {
 
   // Auto-populate vendor data when vendor code changes
   useEffect(() => {
-    const fetchVendorData = async (code: string, retryCount = 0) => {
-      if (!code || code.length < 3) {
-        return;
-      }
-
-      setLoadingVendor(true);
-      
-      try {
-        // Try exact match first
-        let { data: vendor, error } = await supabase
-          .from('vendors')
-          .select('vendor_name, location')
-          .eq('vendor_code', code.trim())
-          .maybeSingle();
-
-        // If no exact match found, try case-insensitive search
-        if (!vendor && !error) {
-          const { data: vendorCaseInsensitive, error: caseError } = await supabase
+    const fetchVendorData = async () => {
+      if (vendorCode && vendorCode.length >= 3) {
+        setLoadingVendor(true);
+        try {
+          const { data: vendor, error } = await supabase
             .from('vendors')
             .select('vendor_name, location')
-            .ilike('vendor_code', code.trim())
+            .eq('vendor_code', vendorCode)
             .maybeSingle();
-          
-          vendor = vendorCaseInsensitive;
-          error = caseError;
-        }
 
-        if (error) {
-          console.error('Error fetching vendor data:', error);
-          
-          // Retry mechanism for network issues
-          if (retryCount < 2 && (error.message.includes('network') || error.message.includes('timeout'))) {
-            console.log(`Retrying vendor fetch, attempt ${retryCount + 1}`);
-            setTimeout(() => fetchVendorData(code, retryCount + 1), 1000);
-            return;
+          if (vendor && !error) {
+            setValue('vendorName', vendor.vendor_name);
+            setValue('businessAddress', vendor.location || '');
           }
-          
-          toast({
-            title: "Network Error",
-            description: "Unable to fetch vendor details. Please check your connection and try again.",
-            variant: "destructive",
-          });
-          return;
+        } catch (error) {
+          console.error('Error fetching vendor data:', error);
+        } finally {
+          setLoadingVendor(false);
         }
-
-        if (vendor) {
-          setValue('vendorName', vendor.vendor_name || '');
-          setValue('businessAddress', vendor.location || '');
-          
-          toast({
-            title: "Vendor Found",
-            description: `Vendor details loaded for ${vendor.vendor_name}`,
-          });
-        } else {
-          // Clear fields if no vendor found
-          setValue('vendorName', '');
-          setValue('businessAddress', '');
-          
-          toast({
-            title: "Vendor Not Found",
-            description: `No vendor found with code: ${code}. Please verify the vendor code.`,
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Unexpected error fetching vendor data:', error);
-        
-        // Retry on unexpected errors
-        if (retryCount < 2) {
-          console.log(`Retrying vendor fetch after error, attempt ${retryCount + 1}`);
-          setTimeout(() => fetchVendorData(code, retryCount + 1), 1000);
-          return;
-        }
-        
-        toast({
-          title: "Error",
-          description: "Failed to fetch vendor details. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingVendor(false);
       }
     };
 
-    // Debounce the API call but make it more robust
-    const debounceTimer = setTimeout(() => {
-      if (vendorCode && vendorCode.length >= 3) {
-        fetchVendorData(vendorCode);
-      } else if (vendorCode && vendorCode.length > 0 && vendorCode.length < 3) {
-        // Clear fields if vendor code is too short
-        setValue('vendorName', '');
-        setValue('businessAddress', '');
-      }
-    }, 800); // Slightly longer debounce for better UX
-
+    const debounceTimer = setTimeout(fetchVendorData, 500);
     return () => clearTimeout(debounceTimer);
-  }, [vendorCode, setValue, toast]);
+  }, [vendorCode, setValue]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
