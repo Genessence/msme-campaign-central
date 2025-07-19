@@ -101,28 +101,79 @@ export default function MSMEStatusUpdate() {
     const fetchVendorData = async () => {
       if (vendorCode && vendorCode.length >= 3) {
         setLoadingVendor(true);
-        try {
-          const { data: vendor, error } = await supabase
-            .from('vendors')
-            .select('vendor_name, location')
-            .eq('vendor_code', vendorCode)
-            .maybeSingle();
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        const attemptFetch = async (): Promise<void> => {
+          try {
+            attempts++;
+            
+            // Case-insensitive search for vendor code
+            const { data: vendor, error } = await supabase
+              .from('vendors')
+              .select('vendor_name, location')
+              .ilike('vendor_code', vendorCode)
+              .maybeSingle();
 
-          if (vendor && !error) {
-            setValue('vendorName', vendor.vendor_name);
-            setValue('businessAddress', vendor.location || '');
+            if (error) {
+              console.error('Supabase error:', error);
+              throw error;
+            }
+
+            if (vendor) {
+              setValue('vendorName', vendor.vendor_name);
+              setValue('businessAddress', vendor.location || '');
+              toast({
+                title: "Vendor Found",
+                description: `Details loaded for ${vendor.vendor_name}`,
+              });
+            } else {
+              // Try exact match as fallback
+              const { data: exactVendor, error: exactError } = await supabase
+                .from('vendors')
+                .select('vendor_name, location')
+                .eq('vendor_code', vendorCode)
+                .maybeSingle();
+                
+              if (exactVendor && !exactError) {
+                setValue('vendorName', exactVendor.vendor_name);
+                setValue('businessAddress', exactVendor.location || '');
+                toast({
+                  title: "Vendor Found",
+                  description: `Details loaded for ${exactVendor.vendor_name}`,
+                });
+              } else if (attempts === maxAttempts) {
+                toast({
+                  title: "Vendor Not Found",
+                  description: "Please check the vendor code and try again.",
+                  variant: "destructive",
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Attempt ${attempts} failed:`, error);
+            
+            if (attempts < maxAttempts) {
+              // Retry with exponential backoff
+              setTimeout(() => attemptFetch(), 1000 * attempts);
+            } else {
+              toast({
+                title: "Connection Error",
+                description: "Unable to fetch vendor data. Please check your connection and try again.",
+                variant: "destructive",
+              });
+            }
           }
-        } catch (error) {
-          console.error('Error fetching vendor data:', error);
-        } finally {
-          setLoadingVendor(false);
-        }
+        };
+        
+        await attemptFetch();
+        setLoadingVendor(false);
       }
     };
 
     const debounceTimer = setTimeout(fetchVendorData, 500);
     return () => clearTimeout(debounceTimer);
-  }, [vendorCode, setValue]);
+  }, [vendorCode, setValue, toast]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
