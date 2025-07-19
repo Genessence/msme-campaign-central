@@ -181,6 +181,7 @@ export type Database = {
       }
       form_fields: {
         Row: {
+          conditional_logic: Json | null
           created_at: string
           field_name: string
           field_type: string
@@ -193,6 +194,7 @@ export type Database = {
           validation_rules: Json | null
         }
         Insert: {
+          conditional_logic?: Json | null
           created_at?: string
           field_name: string
           field_type: string
@@ -205,6 +207,7 @@ export type Database = {
           validation_rules?: Json | null
         }
         Update: {
+          conditional_logic?: Json | null
           created_at?: string
           field_name?: string
           field_type?: string
