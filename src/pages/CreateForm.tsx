@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, GripVertical, Trash2, Eye } from "lucide-react";
+import { Plus, GripVertical, Trash2, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -189,301 +189,389 @@ export default function CreateForm() {
 
   if (previewMode) {
     return (
-      <div className="container mx-auto py-8 max-w-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Form Preview</h1>
-          <Button variant="outline" onClick={() => setPreviewMode(false)}>
-            Back to Editor
-          </Button>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>{formData.title}</CardTitle>
-            {formData.description && (
-              <p className="text-muted-foreground">{formData.description}</p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.fields.map((field) => (
-              <div key={field.id} className="space-y-2">
-                <Label>
-                  {field.label}
-                  {field.is_required && <span className="text-destructive">*</span>}
-                </Label>
-                {field.field_type === "textarea" ? (
-                  <Textarea placeholder={`Enter ${field.label.toLowerCase()}`} />
-                ) : field.field_type === "select" ? (
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="option1">Option 1</SelectItem>
-                      <SelectItem value="option2">Option 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    type={field.field_type === "email" ? "email" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                  />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="shadow-lg mb-6">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-primary" />
+                    Form Preview
+                  </CardTitle>
+                  <Button variant="outline" onClick={() => setPreviewMode(false)}>
+                    Back to Editor
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+            
+            <Card className="shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
+                <CardTitle>{formData.title}</CardTitle>
+                {formData.description && (
+                  <p className="text-muted-foreground mt-2">{formData.description}</p>
                 )}
-              </div>
-            ))}
-            <Button className="w-full">Submit</Button>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                {formData.fields.map((field) => (
+                  <div key={field.id} className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      {field.label}
+                      {field.is_required && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    {field.field_type === "textarea" ? (
+                      <Textarea 
+                        placeholder={`Enter ${field.label.toLowerCase()}`} 
+                        className="min-h-[100px]"
+                      />
+                    ) : field.field_type === "select" ? (
+                      <Select>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.isArray(field.options) && field.options.length > 0 ? (
+                            field.options.map((option, index) => (
+                              <SelectItem key={index} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="option1">Option 1</SelectItem>
+                              <SelectItem value="option2">Option 2</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        type={field.field_type === "email" ? "email" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                        className="h-11"
+                      />
+                    )}
+                  </div>
+                ))}
+                <Button className="w-full h-12 text-base font-medium">Submit Form</Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Custom Form</h1>
-          <p className="text-muted-foreground">Build a custom form for your campaigns</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPreviewMode(true)}>
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Creating..." : "Create Form"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Configuration */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Configuration</CardTitle>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header Section */}
+          <Card className="shadow-lg mb-8">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-2xl mb-2">
+                    <FileText className="h-6 w-6 text-primary" />
+                    Create Custom Form
+                  </CardTitle>
+                  <p className="text-muted-foreground">
+                    Build a custom form for your campaigns with conditional logic and professional styling
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setPreviewMode(true)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  <Button onClick={handleSubmit} disabled={loading} className="px-6">
+                    {loading ? "Creating..." : "Create Form"}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Form Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleBasicInfoChange('name', e.target.value)}
-                  placeholder="Enter form name"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="title">Form Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleBasicInfoChange('title', e.target.value)}
-                  placeholder="Enter form title"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleBasicInfoChange('description', e.target.value)}
-                  placeholder="Enter form description"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="slug">URL Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => handleBasicInfoChange('slug', e.target.value)}
-                  placeholder="form-url-slug"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Public URL: /forms/{formData.slug || 'your-slug'}
-                </p>
-              </div>
-
-              <Separator />
-
-              <Button onClick={addField} className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Field
-              </Button>
-            </CardContent>
           </Card>
-        </div>
 
-        {/* Form Builder */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Fields</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="form-fields">
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                      {formData.fields.map((field, index) => (
-                        <Draggable key={field.id} draggableId={field.id} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className="border rounded-lg p-4 bg-background"
-                            >
-                              <div className="flex items-center gap-2 mb-4">
-                                <div {...provided.dragHandleProps}>
-                                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                                <span className="font-medium">Field {index + 1}</span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeField(field.id)}
-                                  className="ml-auto"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Form Configuration */}
+            <div className="lg:col-span-1">
+              <Card className="shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
+                  <CardTitle className="text-lg">Form Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="name" className="text-sm font-medium">Form Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleBasicInfoChange('name', e.target.value)}
+                      placeholder="Enter form name"
+                      className="h-11"
+                    />
+                  </div>
 
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Field Type</Label>
-                                  <Select
-                                    value={field.field_type}
-                                    onValueChange={(value) => updateField(field.id, { field_type: value })}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {FIELD_TYPES.map((type) => (
-                                        <SelectItem key={type.value} value={type.value}>
-                                          {type.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="title" className="text-sm font-medium">Form Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleBasicInfoChange('title', e.target.value)}
+                      placeholder="Enter form title"
+                      className="h-11"
+                    />
+                  </div>
 
-                                <div className="space-y-2">
-                                  <Label>Field Name</Label>
-                                  <Input
-                                    value={field.field_name}
-                                    onChange={(e) => updateField(field.id, { field_name: e.target.value })}
-                                    placeholder="field_name"
-                                  />
-                                </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleBasicInfoChange('description', e.target.value)}
+                      placeholder="Enter form description"
+                      rows={3}
+                    />
+                  </div>
 
-                                <div className="space-y-2 col-span-2">
-                                  <Label>Label</Label>
-                                  <Input
-                                    value={field.label}
-                                    onChange={(e) => updateField(field.id, { label: e.target.value })}
-                                    placeholder="Field Label"
-                                  />
-                                </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="slug" className="text-sm font-medium">Form URL Slug</Label>
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) => handleBasicInfoChange('slug', e.target.value)}
+                      placeholder="form-url-slug"
+                      className="h-11 font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Public URL: /forms/{formData.slug || 'your-slug'}
+                    </p>
+                  </div>
 
-                                <div className="flex items-center space-x-2 col-span-2">
-                                  <Checkbox
-                                    id={`required-${field.id}`}
-                                    checked={field.is_required}
-                                    onCheckedChange={(checked) => 
-                                      updateField(field.id, { is_required: !!checked })
-                                    }
-                                  />
-                                  <Label htmlFor={`required-${field.id}`}>Required field</Label>
-                                </div>
+                  <Separator />
 
-                                {/* Options for select, radio, checkbox fields */}
-                                {['select', 'radio', 'checkbox'].includes(field.field_type) && (
-                                  <div className="space-y-2 col-span-2">
-                                    <Label>Options (one per line)</Label>
-                                    <Textarea
-                                      value={Array.isArray(field.options) ? field.options.join('\n') : ''}
-                                      onChange={(e) => updateField(field.id, { 
-                                        options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                                      })}
-                                      placeholder="Option 1&#10;Option 2&#10;Option 3"
-                                      rows={3}
-                                    />
-                                  </div>
-                                )}
+                  <Button
+                    onClick={addField}
+                    variant="outline"
+                    className="w-full h-12 border-dashed border-2 hover:border-primary/50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Field
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
-                                {/* Conditional Logic */}
-                                <div className="space-y-3 col-span-2 p-3 bg-muted/50 rounded-lg">
-                                  <Label className="text-sm font-medium">Conditional Logic (Optional)</Label>
-                                  <p className="text-xs text-muted-foreground">
-                                    Show this field only when another field has a specific value
-                                  </p>
-                                  
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Show when field:</Label>
-                                       <Select
-                                         value={field.conditional_logic?.show_when_field || 'none'}
-                                         onValueChange={(value) => updateField(field.id, { 
-                                           conditional_logic: value !== 'none' ? {
-                                             show_when_field: value,
-                                             show_when_value: field.conditional_logic?.show_when_value || ''
-                                           } : undefined
-                                         })}
-                                       >
-                                         <SelectTrigger>
-                                           <SelectValue placeholder="Select field" />
-                                         </SelectTrigger>
-                                         <SelectContent>
-                                           <SelectItem value="none">None</SelectItem>
-                                          {formData.fields
-                                            .filter(f => f.id !== field.id && ['select', 'radio'].includes(f.field_type))
-                                            .map(f => (
-                                              <SelectItem key={f.id} value={f.field_name}>
-                                                {f.label}
-                                              </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Equals value:</Label>
-                                      <Input
-                                        value={field.conditional_logic?.show_when_value || ''}
-                                        onChange={(e) => updateField(field.id, { 
-                                          conditional_logic: field.conditional_logic ? {
-                                            ...field.conditional_logic,
-                                            show_when_value: e.target.value
-                                          } : undefined
-                                        })}
-                                        placeholder="Enter value"
-                                        disabled={!field.conditional_logic?.show_when_field}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                      
-                      {formData.fields.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No fields added yet. Click "Add Field" to get started.
-                        </div>
-                      )}
+            {/* Form Fields Builder */}
+            <div className="lg:col-span-2">
+              <Card className="shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
+                  <CardTitle className="text-lg">Form Fields</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Drag and drop to reorder fields. Configure each field's properties and conditional logic.
+                  </p>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {formData.fields.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                      <div className="text-muted-foreground mb-4">
+                        <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No fields added yet</p>
+                        <p className="text-sm">Click "Add New Field" to start building your form</p>
+                      </div>
                     </div>
+                  ) : (
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                      <Droppable droppableId="form-fields">
+                        {(provided) => (
+                          <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className="space-y-4"
+                          >
+                            {formData.fields.map((field, index) => (
+                              <Draggable key={field.id} draggableId={field.id} index={index}>
+                                {(provided, snapshot) => (
+                                  <Card
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={`border-2 transition-all duration-200 ${
+                                      snapshot.isDragging 
+                                        ? 'border-primary shadow-lg scale-105' 
+                                        : 'border-border hover:border-primary/50'
+                                    }`}
+                                  >
+                                    <CardHeader className="pb-3">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div
+                                            {...provided.dragHandleProps}
+                                            className="p-1 hover:bg-muted rounded cursor-grab"
+                                          >
+                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                          </div>
+                                          <div>
+                                            <CardTitle className="text-base">
+                                              {field.label || `Field ${index + 1}`}
+                                            </CardTitle>
+                                            <p className="text-sm text-muted-foreground capitalize">
+                                              {field.field_type.replace('_', ' ')} field
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeField(field.id)}
+                                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </CardHeader>
+                                    
+                                    <CardContent className="pt-0">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-medium">Field Label</Label>
+                                          <Input
+                                            value={field.label}
+                                            onChange={(e) => updateField(field.id, { label: e.target.value })}
+                                            placeholder="Enter field label"
+                                            className="h-10"
+                                          />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-medium">Field Name</Label>
+                                          <Input
+                                            value={field.field_name}
+                                            onChange={(e) => updateField(field.id, { field_name: e.target.value })}
+                                            placeholder="field_name"
+                                            className="h-10 font-mono text-sm"
+                                          />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-medium">Field Type</Label>
+                                          <Select
+                                            value={field.field_type}
+                                            onValueChange={(value) => updateField(field.id, { field_type: value })}
+                                          >
+                                            <SelectTrigger className="h-10">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {FIELD_TYPES.map((type) => (
+                                                <SelectItem key={type.value} value={type.value}>
+                                                  {type.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`required-${field.id}`}
+                                            checked={field.is_required}
+                                            onCheckedChange={(checked) => 
+                                              updateField(field.id, { is_required: !!checked })
+                                            }
+                                          />
+                                          <Label htmlFor={`required-${field.id}`} className="text-sm font-medium">
+                                            Required field
+                                          </Label>
+                                        </div>
+
+                                        {/* Options for select, radio, checkbox fields */}
+                                        {['select', 'radio', 'checkbox'].includes(field.field_type) && (
+                                          <div className="space-y-3 md:col-span-2">
+                                            <Label className="text-sm font-medium">Options (one per line)</Label>
+                                            <Textarea
+                                              value={Array.isArray(field.options) ? field.options.join('\n') : ''}
+                                              onChange={(e) => updateField(field.id, { 
+                                                options: e.target.value.split('\n').filter(opt => opt.trim()) 
+                                              })}
+                                              placeholder="Option 1&#10;Option 2&#10;Option 3"
+                                              rows={3}
+                                              className="font-mono text-sm"
+                                            />
+                                          </div>
+                                        )}
+
+                                        {/* Conditional Logic */}
+                                        <div className="space-y-4 md:col-span-2 p-4 bg-muted/30 rounded-lg border">
+                                          <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 bg-primary rounded-full"></div>
+                                            <Label className="text-sm font-medium">Conditional Logic (Optional)</Label>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">
+                                            Show this field only when another field has a specific value
+                                          </p>
+                                          
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                              <Label className="text-xs font-medium">Show when field:</Label>
+                                              <Select
+                                                value={field.conditional_logic?.show_when_field || 'none'}
+                                                onValueChange={(value) => updateField(field.id, { 
+                                                  conditional_logic: value !== 'none' ? {
+                                                    show_when_field: value,
+                                                    show_when_value: field.conditional_logic?.show_when_value || ''
+                                                  } : undefined
+                                                })}
+                                              >
+                                                <SelectTrigger className="h-9">
+                                                  <SelectValue placeholder="Select field" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">None</SelectItem>
+                                                  {formData.fields
+                                                    .filter(f => f.id !== field.id && ['select', 'radio'].includes(f.field_type))
+                                                    .map(f => (
+                                                      <SelectItem key={f.id} value={f.field_name}>
+                                                        {f.label}
+                                                      </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                              <Label className="text-xs font-medium">Equals value:</Label>
+                                              <Input
+                                                value={field.conditional_logic?.show_when_value || ''}
+                                                onChange={(e) => updateField(field.id, { 
+                                                  conditional_logic: field.conditional_logic ? {
+                                                    ...field.conditional_logic,
+                                                    show_when_value: e.target.value
+                                                  } : undefined
+                                                })}
+                                                placeholder="Enter value"
+                                                disabled={!field.conditional_logic?.show_when_field}
+                                                className="h-9"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   )}
-                </Droppable>
-              </DragDropContext>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
