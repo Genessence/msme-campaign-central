@@ -149,42 +149,58 @@ export default function CampaignDetails() {
 
       setVendorResponses(formattedResponses);
 
-      // Fetch email send records - explicitly set a high limit to get all records
+      // Fetch email send records in batches to handle large datasets
       console.log('Fetching email sends for campaign:', id);
-      const { data: emailSendsData, error: emailSendsError, count: emailSendsCount } = await supabase
-        .from('campaign_email_sends')
-        .select(`
-          vendor_id,
-          sent_at,
-          email_type,
-          status,
-          vendors (
-            vendor_name,
-            email,
-            phone
-          )
-        `, { count: 'exact' })
-        .eq('campaign_id', id)
-        .order('sent_at', { ascending: false })
-        .limit(10000); // Set a high limit to ensure we get all records
+      const allEmailSends = [];
+      const batchSize = 1000;
+      let from = 0;
+      
+      while (true) {
+        const { data: emailSendsBatch, error: emailSendsError } = await supabase
+          .from('campaign_email_sends')
+          .select(`
+            vendor_id,
+            sent_at,
+            email_type,
+            status,
+            vendors (
+              vendor_name,
+              email,
+              phone
+            )
+          `)
+          .eq('campaign_id', id)
+          .order('sent_at', { ascending: false })
+          .range(from, from + batchSize - 1);
 
-      if (emailSendsError) {
-        console.error('Error fetching email sends:', emailSendsError);
-      } else {
-        console.log(`Found ${emailSendsData?.length} email send records, total count: ${emailSendsCount}`);
-        const formattedEmailSends = emailSendsData?.map(send => ({
-          vendor_id: send.vendor_id,
-          vendor_name: send.vendors?.vendor_name || 'Unknown Vendor',
-          vendor_email: send.vendors?.email || null,
-          vendor_phone: send.vendors?.phone || null,
-          sent_at: send.sent_at,
-          email_type: send.email_type,
-          status: send.status,
-        })) || [];
-
-        setEmailSends(formattedEmailSends);
-        console.log(`Set ${formattedEmailSends.length} email send records in state`);
+        if (emailSendsError) {
+          console.error('Error fetching email sends batch:', emailSendsError);
+          break;
+        }
+        
+        if (!emailSendsBatch || emailSendsBatch.length === 0) break;
+        
+        allEmailSends.push(...emailSendsBatch);
+        
+        // If we got less than batchSize, we've reached the end
+        if (emailSendsBatch.length < batchSize) break;
+        
+        from += batchSize;
       }
+
+      console.log(`Found ${allEmailSends.length} total email send records`);
+      const formattedEmailSends = allEmailSends.map(send => ({
+        vendor_id: send.vendor_id,
+        vendor_name: send.vendors?.vendor_name || 'Unknown Vendor',
+        vendor_email: send.vendors?.email || null,
+        vendor_phone: send.vendors?.phone || null,
+        sent_at: send.sent_at,
+        email_type: send.email_type,
+        status: send.status,
+      }));
+
+      setEmailSends(formattedEmailSends);
+      console.log(`Set ${formattedEmailSends.length} email send records in state`);
     } catch (error) {
       console.error('Error fetching campaign details:', error);
       toast({

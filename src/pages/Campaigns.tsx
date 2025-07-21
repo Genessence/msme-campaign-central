@@ -305,14 +305,14 @@ export default function Campaigns() {
                              <div className="text-sm">
                                {campaign.responded} / {campaign.totalVendors} emails sent
                              </div>
-                             <div className="w-full bg-muted rounded-full h-2">
-                               <div 
-                                 className="bg-primary h-2 rounded-full transition-all" 
-                                 style={{ 
-                                   width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
-                                 }}
-                               />
-                             </div>
+                              <div className="w-full max-w-32 bg-muted rounded-full h-2">
+                                <div 
+                                  className="bg-primary h-2 rounded-full transition-all" 
+                                  style={{ 
+                                    width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
+                                  }}
+                                />
+                              </div>
                            </div>
                          </TableCell>
                         <TableCell>{campaign.deadline || 'No deadline'}</TableCell>
