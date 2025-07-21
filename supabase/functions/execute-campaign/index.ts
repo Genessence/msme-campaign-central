@@ -16,7 +16,7 @@ interface ExecuteCampaignRequest {
 
 // Batch size for processing vendors
 const BATCH_SIZE = 100;
-const MESSAGE_BATCH_SIZE = 10; // Smaller batch for sending messages to avoid rate limits
+const MESSAGE_BATCH_SIZE = 2; // Respect Resend's 2 requests/second limit
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -182,48 +182,69 @@ async function processBatchEmails(
 
   console.log(`Processing emails for batch ${batchNumber} (${vendors.length} vendors)`);
 
-  // Process emails in smaller sub-batches to avoid rate limits
-  for (let i = 0; i < vendors.length; i += MESSAGE_BATCH_SIZE) {
-    const messageBatch = vendors.slice(i, i + MESSAGE_BATCH_SIZE);
-    
-    await Promise.all(messageBatch.map(async (vendor) => {
-      if (!vendor.email) {
-        return;
-      }
+  // Process emails sequentially to respect rate limits (2 requests/second)
+  for (const vendor of vendors) {
+    if (!vendor.email) {
+      continue;
+    }
 
-      try {
-        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-campaign-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-          },
-          body: JSON.stringify({
-            campaignId: campaign.id,
-            vendorId: vendor.id,
-            vendorEmail: vendor.email,
-            vendorName: vendor.vendor_name,
-            vendorCode: vendor.vendor_code,
-            vendorLocation: vendor.location,
-            templateId: campaign.email_template_id,
-          }),
-        });
+    try {
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-campaign-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          vendorId: vendor.id,
+          vendorEmail: vendor.email,
+          vendorName: vendor.vendor_name,
+          vendorCode: vendor.vendor_code,
+          vendorLocation: vendor.location,
+          templateId: campaign.email_template_id,
+        }),
+      });
 
-        if (emailResponse.ok) {
-          sent++;
+      if (emailResponse.ok) {
+        sent++;
+      } else {
+        const errorData = await emailResponse.json();
+        if (errorData.error?.includes('rate_limit_exceeded')) {
+          console.log(`Rate limit hit for ${vendor.vendor_name}, waiting longer...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second extra
+          // Retry once
+          const retryResponse = await fetch(`${supabaseUrl}/functions/v1/send-campaign-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              campaignId: campaign.id,
+              vendorId: vendor.id,
+              vendorEmail: vendor.email,
+              vendorName: vendor.vendor_name,
+              vendorCode: vendor.vendor_code,
+              vendorLocation: vendor.location,
+              templateId: campaign.email_template_id,
+            }),
+          });
+          if (retryResponse.ok) {
+            sent++;
+          } else {
+            errors.push(`Email to ${vendor.vendor_name}: ${errorData.error}`);
+          }
         } else {
-          const errorData = await emailResponse.json();
           errors.push(`Email to ${vendor.vendor_name}: ${errorData.error}`);
         }
-      } catch (error) {
-        errors.push(`Email to ${vendor.vendor_name}: ${error}`);
       }
-    }));
-
-    // Small delay between message batches
-    if (i + MESSAGE_BATCH_SIZE < vendors.length) {
-      await new Promise(resolve => setTimeout(resolve, 50));
+    } catch (error) {
+      errors.push(`Email to ${vendor.vendor_name}: ${error}`);
     }
+
+    // Wait 500ms between each email (2 per second limit)
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   console.log(`Batch ${batchNumber} emails: ${sent} sent, ${errors.length} errors`);
