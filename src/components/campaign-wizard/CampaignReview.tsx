@@ -27,6 +27,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('CampaignReview - data changed:', data);
     fetchReviewData();
   }, [data]);
 

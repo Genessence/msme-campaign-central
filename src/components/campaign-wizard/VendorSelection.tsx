@@ -100,7 +100,9 @@ export function VendorSelection({ data, onUpdate, onNext, onPrev }: VendorSelect
 
   const handleSelectAll = () => {
     const allVendorIds = filteredVendors.map(v => v.id);
+    console.log('Selecting all vendors:', allVendorIds.length);
     onUpdate({ selectedVendors: allVendorIds });
+    console.log('Updated selectedVendors:', allVendorIds.length);
   };
 
   const handleDeselectAll = () => {

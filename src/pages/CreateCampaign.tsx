@@ -42,7 +42,12 @@ export default function CreateCampaign() {
   const { user } = useAuth();
 
   const updateFormData = (data: Partial<CampaignFormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    console.log('Updating form data:', data);
+    setFormData(prev => {
+      const updated = { ...prev, ...data };
+      console.log('Updated form data:', updated);
+      return updated;
+    });
   };
 
   const nextStep = () => {
