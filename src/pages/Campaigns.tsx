@@ -70,15 +70,33 @@ export default function Campaigns() {
         (campaignsData || []).map(async (campaign) => {
           const totalVendors = campaign.target_vendors?.length || 0;
           
-          // Get email sending progress instead of response progress
-          const { data: emailSends, error: emailError } = await supabase
-            .from('campaign_email_sends')
-            .select('vendor_id')
-            .eq('campaign_id', campaign.id)
-            .eq('status', 'sent')
-            .limit(10000); // Set high limit to get all email records
+          // Get email sending progress in batches to handle large datasets
+          let emailsSent = 0;
+          const batchSize = 1000;
+          let from = 0;
+          
+          while (true) {
+            const { data: emailBatch, error: emailError } = await supabase
+              .from('campaign_email_sends')
+              .select('vendor_id')
+              .eq('campaign_id', campaign.id)
+              .eq('status', 'sent')
+              .range(from, from + batchSize - 1);
 
-          const emailsSent = emailSends?.length || 0;
+            if (emailError) {
+              console.error('Error fetching email sends batch:', emailError);
+              break;
+            }
+            
+            if (!emailBatch || emailBatch.length === 0) break;
+            
+            emailsSent += emailBatch.length;
+            
+            // If we got less than batchSize, we've reached the end
+            if (emailBatch.length < batchSize) break;
+            
+            from += batchSize;
+          }
           console.log(`Campaign ${campaign.name}: Found ${emailsSent} emails sent`);
 
           return {
