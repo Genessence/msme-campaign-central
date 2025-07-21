@@ -149,25 +149,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Chunk processed: ${emailsSent} emails sent, ${errors.length} errors`);
 
-    // If not complete, schedule next chunk
-    if (!isComplete) {
-      // Schedule next chunk execution with a small delay
-      setTimeout(async () => {
-        try {
-          await supabase.functions.invoke('execute-campaign-chunk', {
-            body: { 
-              campaignId, 
-              chunkSize, 
-              startIndex: nextStartIndex 
-            }
-          });
-        } catch (error) {
-          console.error('Error scheduling next chunk:', error);
-        }
-      }, 2000); // 2 second delay to respect rate limits
-    } else {
-      // Mark campaign as fully processed if complete
+    // Log completion status
+    if (isComplete) {
       console.log('Campaign chunk processing complete');
+    } else {
+      console.log(`More chunks to process. Next start index: ${nextStartIndex}`);
     }
 
     return new Response(JSON.stringify({

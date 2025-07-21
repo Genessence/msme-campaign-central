@@ -174,6 +174,7 @@ export default function CampaignDetails() {
     if (!campaign) return;
     
     setExecuting(true);
+    
     try {
       // Update campaign status to Active if it's currently Draft
       if (campaign.status === 'Draft') {
@@ -185,36 +186,13 @@ export default function CampaignDetails() {
         if (statusError) throw statusError;
       }
 
-      // Call the new chunked execute-campaign function
-      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
-        body: { 
-          campaignId: campaign.id,
-          chunkSize: 50,
-          startIndex: 0
-        }
-      });
-
-      if (error) throw error;
-
       toast({
         title: "Campaign Execution Started",
-        description: `Campaign "${campaign.name}" is now being executed in chunks. The process will continue automatically until all vendors are processed.`,
+        description: `Campaign "${campaign.name}" is now being processed. Please wait while we send emails to all vendors.`,
       });
 
-      // Set up polling to refresh campaign details periodically
-      const pollInterval = setInterval(() => {
-        fetchCampaignDetails();
-      }, 10000); // Poll every 10 seconds
-
-      // Stop polling after 5 minutes
-      setTimeout(() => {
-        clearInterval(pollInterval);
-      }, 300000);
-
-      // Initial refresh after a short delay
-      setTimeout(() => {
-        fetchCampaignDetails();
-      }, 3000);
+      // Start continuous chunk processing
+      await executeChunksContinuously(0);
 
     } catch (error) {
       console.error('Error executing campaign:', error);
@@ -223,7 +201,62 @@ export default function CampaignDetails() {
         description: "Failed to execute campaign. Please try again.",
         variant: "destructive",
       });
-    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const executeChunksContinuously = async (startIndex: number) => {
+    try {
+      console.log(`Processing chunk starting at index: ${startIndex}`);
+      
+      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
+        body: { 
+          campaignId: campaign?.id,
+          chunkSize: 50,
+          startIndex
+        }
+      });
+
+      if (error) {
+        console.error('Error executing campaign chunk:', error);
+        toast({
+          title: "Error",
+          description: "Campaign processing encountered an error. Please try resuming.",
+          variant: "destructive",
+        });
+        setExecuting(false);
+        return;
+      }
+
+      console.log('Chunk execution result:', data);
+      
+      // Refresh campaign details to show progress
+      await fetchCampaignDetails();
+
+      // If not complete, continue with next chunk after a short delay
+      if (data && !data.isComplete && data.nextStartIndex !== undefined) {
+        // Add a small delay between chunks to avoid overwhelming the system
+        setTimeout(() => {
+          executeChunksContinuously(data.nextStartIndex);
+        }, 2000); // 2 second delay between chunks
+      } else {
+        console.log('Campaign execution completed');
+        toast({
+          title: "Campaign Complete",
+          description: `Campaign "${campaign?.name}" has been successfully executed!`,
+        });
+        setExecuting(false);
+        // Final refresh
+        await fetchCampaignDetails();
+      }
+      
+    } catch (error: any) {
+      console.error('Error in continuous chunk execution:', error);
+      toast({
+        title: "Error",
+        description: "Campaign processing failed. Please try resuming.",
+        variant: "destructive",
+      });
       setExecuting(false);
     }
   };
