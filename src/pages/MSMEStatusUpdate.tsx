@@ -500,9 +500,9 @@ export default function MSMEStatusUpdate() {
             </div>
             <div className="mb-4">
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                This portal is governed and managed by Amber Enterprises India Limited. In case of any issue, please contact Amber Corporate Sourcing.
+                Amber Compliance System
               </h1>
-              <p className="text-lg text-muted-foreground">Amber Compliance System</p>
+              <p className="text-lg text-muted-foreground">This portal is governed and managed by Amber Enterprises India Limited. In case of any issue, please contact Amber Corporate Sourcing.</p>
             </div>
             <div className="max-w-2xl mx-auto">
               <Alert className="border-blue-200 bg-blue-50/50">
