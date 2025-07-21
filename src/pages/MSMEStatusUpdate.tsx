@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle, Upload, FileText, Building, Shield } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload, FileText, Building, Shield, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -743,7 +743,50 @@ export default function MSMEStatusUpdate() {
                               <AlertCircle className="h-4 w-4 mr-1" />
                               {String(errors.certificate.message)}
                             </p>
-                          )}
+                           )}
+                          
+                          {/* Certificate Upload Instructions */}
+                          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h5 className="font-semibold text-blue-800 mb-3 flex items-center">
+                              <Upload className="h-4 w-4 mr-2" />
+                              Certificate Upload Guidelines
+                            </h5>
+                            <p className="text-sm text-blue-700 mb-4">
+                              Please upload your latest Udyam certificate. Make sure it contains the current year classification.
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Correct Certificate Example */}
+                              <div className="relative border-2 border-green-500 rounded-lg p-3 bg-green-50">
+                                <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
+                                  <CheckCircle className="h-5 w-5 text-white" />
+                                </div>
+                                <img 
+                                  src="/lovable-uploads/f34ec981-a321-4b67-8028-52c3617f768d.png" 
+                                  alt="Correct Udyam Certificate Example" 
+                                  className="w-full h-auto rounded border"
+                                />
+                                <p className="text-sm font-medium text-green-700 mt-2 text-center">
+                                  ✓ Upload certificates with current year classification
+                                </p>
+                              </div>
+                              
+                              {/* Incorrect Certificate Example */}
+                              <div className="relative border-2 border-red-500 rounded-lg p-3 bg-red-50">
+                                <div className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1">
+                                  <X className="h-5 w-5 text-white" />
+                                </div>
+                                <img 
+                                  src="/lovable-uploads/91872135-3009-47c4-86e2-0f0f02354dbf.png" 
+                                  alt="Outdated Udyam Certificate Example" 
+                                  className="w-full h-auto rounded border"
+                                />
+                                <p className="text-sm font-medium text-red-700 mt-2 text-center">
+                                  ✗ Do not upload outdated certificates
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
