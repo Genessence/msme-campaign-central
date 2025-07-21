@@ -75,9 +75,11 @@ export default function Campaigns() {
             .from('campaign_email_sends')
             .select('vendor_id')
             .eq('campaign_id', campaign.id)
-            .eq('status', 'sent');
+            .eq('status', 'sent')
+            .limit(10000); // Set high limit to get all email records
 
           const emailsSent = emailSends?.length || 0;
+          console.log(`Campaign ${campaign.name}: Found ${emailsSent} emails sent`);
 
           return {
             id: campaign.id,
