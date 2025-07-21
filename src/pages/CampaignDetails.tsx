@@ -126,8 +126,9 @@ export default function CampaignDetails() {
 
       setVendorResponses(formattedResponses);
 
-      // Fetch email send records
-      const { data: emailSendsData, error: emailSendsError } = await supabase
+      // Fetch email send records - explicitly set a high limit to get all records
+      console.log('Fetching email sends for campaign:', id);
+      const { data: emailSendsData, error: emailSendsError, count: emailSendsCount } = await supabase
         .from('campaign_email_sends')
         .select(`
           vendor_id,
@@ -139,13 +140,15 @@ export default function CampaignDetails() {
             email,
             phone
           )
-        `)
+        `, { count: 'exact' })
         .eq('campaign_id', id)
-        .order('sent_at', { ascending: false });
+        .order('sent_at', { ascending: false })
+        .limit(10000); // Set a high limit to ensure we get all records
 
       if (emailSendsError) {
         console.error('Error fetching email sends:', emailSendsError);
       } else {
+        console.log(`Found ${emailSendsData?.length} email send records, total count: ${emailSendsCount}`);
         const formattedEmailSends = emailSendsData?.map(send => ({
           vendor_id: send.vendor_id,
           vendor_name: send.vendors?.vendor_name || 'Unknown Vendor',
@@ -157,6 +160,7 @@ export default function CampaignDetails() {
         })) || [];
 
         setEmailSends(formattedEmailSends);
+        console.log(`Set ${formattedEmailSends.length} email send records in state`);
       }
     } catch (error) {
       console.error('Error fetching campaign details:', error);
