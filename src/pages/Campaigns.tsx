@@ -309,7 +309,7 @@ export default function Campaigns() {
                                 <div 
                                   className="bg-primary h-2 rounded-full transition-all" 
                                   style={{ 
-                                    width: `${(campaign.responded / campaign.totalVendors) * 100}%` 
+                                    width: `${Math.min((campaign.responded / campaign.totalVendors) * 100, 100)}%` 
                                   }}
                                 />
                               </div>
