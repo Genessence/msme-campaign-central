@@ -33,71 +33,98 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
 
   const fetchReviewData = async () => {
     try {
-      const promises = [];
+      console.log('Fetching review data for:', {
+        selectedVendors: data.selectedVendors.length,
+        emailTemplateId: data.emailTemplateId,
+        whatsappTemplateId: data.whatsappTemplateId
+      });
 
-      // Fetch selected vendors
+      // Fetch vendors in batches if there are many selected
       if (data.selectedVendors.length > 0) {
-        promises.push(
-          supabase
-            .from('vendors')
-            .select('*')
-            .in('id', data.selectedVendors)
-        );
+        await fetchVendorsInBatches();
       }
 
-      // Fetch email template
-      if (data.emailTemplateId) {
-        promises.push(
-          supabase
-            .from('email_templates')
-            .select('*')
-            .eq('id', data.emailTemplateId)
-            .single()
-        );
-      }
+      // Fetch templates
+      await Promise.all([
+        data.emailTemplateId ? fetchEmailTemplate() : Promise.resolve(),
+        data.whatsappTemplateId ? fetchWhatsAppTemplate() : Promise.resolve()
+      ]);
 
-      // Fetch WhatsApp template
-      if (data.whatsappTemplateId) {
-        promises.push(
-          supabase
-            .from('whatsapp_templates')
-            .select('*')
-            .eq('id', data.whatsappTemplateId)
-            .single()
-        );
-      }
-
-      const results = await Promise.allSettled(promises);
-      
-      let resultIndex = 0;
-      
-      // Process vendors result
-      if (data.selectedVendors.length > 0) {
-        const vendorsResult = results[resultIndex++];
-        if (vendorsResult.status === 'fulfilled' && !vendorsResult.value.error) {
-          setVendors(vendorsResult.value.data || []);
-        }
-      }
-
-      // Process email template result
-      if (data.emailTemplateId) {
-        const emailResult = results[resultIndex++];
-        if (emailResult.status === 'fulfilled' && !emailResult.value.error) {
-          setEmailTemplate(emailResult.value.data);
-        }
-      }
-
-      // Process WhatsApp template result
-      if (data.whatsappTemplateId) {
-        const whatsappResult = results[resultIndex++];
-        if (whatsappResult.status === 'fulfilled' && !whatsappResult.value.error) {
-          setWhatsappTemplate(whatsappResult.value.data);
-        }
-      }
     } catch (error) {
       console.error('Error fetching review data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVendorsInBatches = async () => {
+    try {
+      const batchSize = 100; // Supabase can handle up to ~1000, but let's be safe
+      const allVendors = [];
+
+      for (let i = 0; i < data.selectedVendors.length; i += batchSize) {
+        const batch = data.selectedVendors.slice(i, i + batchSize);
+        console.log(`Fetching vendor batch ${Math.floor(i/batchSize) + 1}, size: ${batch.length}`);
+        
+        const { data: vendorBatch, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .in('id', batch);
+
+        if (error) {
+          console.error('Error fetching vendor batch:', error);
+          throw error;
+        }
+
+        if (vendorBatch) {
+          allVendors.push(...vendorBatch);
+        }
+      }
+
+      console.log('Successfully fetched all vendors:', allVendors.length);
+      setVendors(allVendors);
+    } catch (error) {
+      console.error('Error fetching vendors in batches:', error);
+    }
+  };
+
+  const fetchEmailTemplate = async () => {
+    try {
+      const { data: template, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('id', data.emailTemplateId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching email template:', error);
+        throw error;
+      }
+
+      console.log('Email template fetched:', template?.name);
+      setEmailTemplate(template);
+    } catch (error) {
+      console.error('Error fetching email template:', error);
+    }
+  };
+
+  const fetchWhatsAppTemplate = async () => {
+    try {
+      const { data: template, error } = await supabase
+        .from('whatsapp_templates')
+        .select('*')
+        .eq('id', data.whatsappTemplateId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching WhatsApp template:', error);
+        throw error;
+      }
+
+      console.log('WhatsApp template fetched:', template?.name);
+      setWhatsappTemplate(template);
+    } catch (error) {
+      console.error('Error fetching WhatsApp template:', error);
     }
   };
 
@@ -163,28 +190,69 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
             </div>
             <div className="border rounded-lg">
               <div className="max-h-48 overflow-y-auto">
-                {vendors.map((vendor, index) => (
-                  <div key={vendor.id} className={`p-3 ${index < vendors.length - 1 ? 'border-b' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{vendor.vendor_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {vendor.vendor_code} • {vendor.email}
+                {vendors.length > 0 ? (
+                  <>
+                    {vendors.length > 10 ? (
+                      // Show summary for large lists
+                      <div className="p-4 text-center">
+                        <p className="font-medium">
+                          {vendors.length} vendors selected
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Showing first 5 vendors:
+                        </p>
+                        <div className="mt-3 space-y-2">
+                          {vendors.slice(0, 5).map((vendor, index) => (
+                            <div key={vendor.id} className="text-left p-2 border rounded">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-sm">{vendor.vendor_name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {vendor.vendor_code}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {vendor.msme_status}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          ... and {vendors.length - 5} more vendors
                         </p>
                       </div>
-                      <div className="flex space-x-2">
-                        <Badge variant="outline">
-                          {vendor.msme_status}
-                        </Badge>
-                        {vendor.group_category && (
-                          <Badge variant="secondary">
-                            {vendor.group_category}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                    ) : (
+                      // Show full list for smaller lists
+                      vendors.map((vendor, index) => (
+                        <div key={vendor.id} className={`p-3 ${index < vendors.length - 1 ? 'border-b' : ''}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{vendor.vendor_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {vendor.vendor_code} • {vendor.email}
+                              </p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Badge variant="outline">
+                                {vendor.msme_status}
+                              </Badge>
+                              {vendor.group_category && (
+                                <Badge variant="secondary">
+                                  {vendor.group_category}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No vendors data available
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
