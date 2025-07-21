@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,11 +150,44 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Chunk processed: ${emailsSent} emails sent, ${errors.length} errors`);
 
-    // Log completion status
-    if (isComplete) {
-      console.log('Campaign chunk processing complete');
-    } else {
+    // If not complete, schedule next chunk automatically
+    if (!isComplete) {
       console.log(`More chunks to process. Next start index: ${nextStartIndex}`);
+      
+      // Schedule next chunk after a small delay using background task
+      EdgeRuntime.waitUntil(
+        (async () => {
+          // Wait 3 seconds before processing next chunk
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          try {
+            console.log(`Auto-scheduling next chunk at index: ${nextStartIndex}`);
+            
+            const response = await fetch(`${supabaseUrl}/functions/v1/execute-campaign-chunk`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseAnonKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                campaignId,
+                chunkSize,
+                startIndex: nextStartIndex
+              })
+            });
+            
+            if (!response.ok) {
+              console.error('Failed to schedule next chunk:', await response.text());
+            } else {
+              console.log('Successfully scheduled next chunk');
+            }
+          } catch (error) {
+            console.error('Error scheduling next chunk:', error);
+          }
+        })()
+      );
+    } else {
+      console.log('Campaign chunk processing complete');
     }
 
     return new Response(JSON.stringify({

@@ -186,13 +186,26 @@ export default function CampaignDetails() {
         if (statusError) throw statusError;
       }
 
-      toast({
-        title: "Campaign Execution Started",
-        description: `Campaign "${campaign.name}" is now being processed. Please wait while we send emails to all vendors.`,
+      // Start the chunked execution - the edge function will handle the rest automatically
+      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
+        body: { 
+          campaignId: campaign.id,
+          chunkSize: 50,
+          startIndex: 0
+        }
       });
 
-      // Start continuous chunk processing
-      await executeChunksContinuously(0);
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Execution Started",
+        description: `Campaign "${campaign.name}" is now being processed automatically. You can close this tab and the campaign will continue running.`,
+      });
+
+      // Refresh campaign details after a short delay
+      setTimeout(() => {
+        fetchCampaignDetails();
+      }, 3000);
 
     } catch (error) {
       console.error('Error executing campaign:', error);
@@ -201,62 +214,50 @@ export default function CampaignDetails() {
         description: "Failed to execute campaign. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setExecuting(false);
     }
   };
 
-  const executeChunksContinuously = async (startIndex: number) => {
+  const handleResumeCampaign = async () => {
+    if (!campaign) return;
+    
+    setExecuting(true);
+    
     try {
-      console.log(`Processing chunk starting at index: ${startIndex}`);
+      // Calculate where to resume from based on emails already sent
+      const totalVendors = campaign.target_vendors?.length || 0;
+      const alreadySent = emailSends.length;
       
+      toast({
+        title: "Campaign Resumed",
+        description: `Resuming campaign "${campaign.name}" from ${alreadySent} sent emails. The campaign will continue running automatically.`,
+      });
+
+      // Resume the chunked execution from where we left off
       const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
         body: { 
-          campaignId: campaign?.id,
+          campaignId: campaign.id,
           chunkSize: 50,
-          startIndex
+          startIndex: 0 // The function will automatically skip already sent emails
         }
       });
 
-      if (error) {
-        console.error('Error executing campaign chunk:', error);
-        toast({
-          title: "Error",
-          description: "Campaign processing encountered an error. Please try resuming.",
-          variant: "destructive",
-        });
-        setExecuting(false);
-        return;
-      }
+      if (error) throw error;
 
-      console.log('Chunk execution result:', data);
-      
-      // Refresh campaign details to show progress
-      await fetchCampaignDetails();
+      // Refresh campaign details after a short delay
+      setTimeout(() => {
+        fetchCampaignDetails();
+      }, 3000);
 
-      // If not complete, continue with next chunk after a short delay
-      if (data && !data.isComplete && data.nextStartIndex !== undefined) {
-        // Add a small delay between chunks to avoid overwhelming the system
-        setTimeout(() => {
-          executeChunksContinuously(data.nextStartIndex);
-        }, 2000); // 2 second delay between chunks
-      } else {
-        console.log('Campaign execution completed');
-        toast({
-          title: "Campaign Complete",
-          description: `Campaign "${campaign?.name}" has been successfully executed!`,
-        });
-        setExecuting(false);
-        // Final refresh
-        await fetchCampaignDetails();
-      }
-      
-    } catch (error: any) {
-      console.error('Error in continuous chunk execution:', error);
+    } catch (error) {
+      console.error('Error resuming campaign:', error);
       toast({
         title: "Error",
-        description: "Campaign processing failed. Please try resuming.",
+        description: "Failed to resume campaign. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setExecuting(false);
     }
   };
@@ -345,7 +346,7 @@ export default function CampaignDetails() {
             </Button>
           )}
           {campaign.status === 'Active' && emailsSent < totalVendors && (
-            <Button variant="outline" onClick={handleExecuteCampaign} disabled={executing}>
+            <Button variant="outline" onClick={handleResumeCampaign} disabled={executing}>
               {executing ? 'Resuming...' : 'Resume Campaign'}
             </Button>
           )}
