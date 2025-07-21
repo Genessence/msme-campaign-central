@@ -304,15 +304,16 @@ export default function MSMEStatusUpdate() {
       // Handle file upload and storage
       let fileName = '';
       if (data.msmeStatus === 'MSME Certified' && data.certificate) {
-        // Upload certificate file with naming convention
+        // Upload certificate file with unique naming convention (includes timestamp)
         const fileExtension = data.certificate.name.split('.').pop();
-        fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}.${fileExtension}`;
+        const timestamp = Date.now();
+        fileName = `${data.vendorCode}_${data.vendorName.replace(/\s+/g, '_')}_${timestamp}.${fileExtension}`;
         
         console.log('Uploading file:', fileName, 'Size:', data.certificate.size);
         const { error: uploadError } = await supabase.storage
           .from('msme-documents')
           .upload(fileName, data.certificate, {
-            upsert: true
+            upsert: false // Changed to false since we now have unique filenames
           });
 
         if (uploadError) {
