@@ -243,16 +243,40 @@ export default function EditEmailTemplate() {
 
             <div className="space-y-2">
               <Label>Variables</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newVariable}
-                  onChange={(e) => setNewVariable(e.target.value)}
-                  placeholder="Add variable (e.g., vendor_name)"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariable())}
-                />
-                <Button type="button" onClick={addVariable} size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Click on vendor fields to add as variables:</p>
+                <div className="flex flex-wrap gap-2">
+                  {['vendor_name', 'vendor_code', 'email', 'phone', 'location', 'business_category', 'group_category', 'msme_category', 'msme_status', 'udyam_number', 'registration_date', 'last_updated_date', 'opening_balance', 'closing_balance', 'credit_amount', 'debit_amount'].map((field) => (
+                    <Button
+                      key={field}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (!formData.variables.includes(field)) {
+                          setFormData(prev => ({
+                            ...prev,
+                            variables: [...prev.variables, field]
+                          }));
+                        }
+                      }}
+                      className="text-xs"
+                    >
+                      {field.replace('_', ' ')}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newVariable}
+                    onChange={(e) => setNewVariable(e.target.value)}
+                    placeholder="Or add custom variable"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariable())}
+                  />
+                  <Button type="button" onClick={addVariable} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               {formData.variables.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
