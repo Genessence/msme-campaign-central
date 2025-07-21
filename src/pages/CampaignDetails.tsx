@@ -95,7 +95,7 @@ export default function CampaignDetails() {
       if (campaignError) throw campaignError;
       setCampaign(campaignData);
 
-      // Fetch vendor responses with vendor details - focusing on MSME submissions
+      // Fetch vendor responses with vendor details - all responses, not just completed
       const { data: responsesData, error: responsesError } = await supabase
         .from('msme_responses')
         .select(`
@@ -109,8 +109,7 @@ export default function CampaignDetails() {
             phone
           )
         `)
-        .eq('campaign_id', id)
-        .eq('response_status', 'Completed'); // Only get completed MSME submissions
+        .eq('campaign_id', id);
 
       if (responsesError) throw responsesError;
 
@@ -225,9 +224,9 @@ export default function CampaignDetails() {
   }
 
   const totalVendors = campaign.target_vendors?.length || 0;
-  const completedResponses = vendorResponses.length; // Now only contains completed MSME submissions
+  const completedResponses = vendorResponses.filter(r => r.response_status === 'Completed').length;
+  const pendingResponses = vendorResponses.filter(r => r.response_status === 'Pending').length;
   const emailsSent = emailSends.length;
-  const pendingResponses = totalVendors - completedResponses; // Vendors who haven't submitted yet
   const progressPercentage = totalVendors > 0 ? (completedResponses / totalVendors) * 100 : 0;
 
   return (
@@ -326,9 +325,9 @@ export default function CampaignDetails() {
           <Card>
            <CardHeader>
              <CardTitle>MSME Form Submissions</CardTitle>
-             <CardDescription>
-               Track vendors who have successfully submitted their MSME status updates
-             </CardDescription>
+           <CardDescription>
+             Vendors who have successfully submitted their MSME status updates
+           </CardDescription>
            </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -341,15 +340,15 @@ export default function CampaignDetails() {
                       <TableHead>Submitted At</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {vendorResponses.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          No responses found for this campaign.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      vendorResponses.map((response) => (
+                   <TableBody>
+                     {vendorResponses.length === 0 ? (
+                       <TableRow>
+                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                           No responses found for this campaign.
+                         </TableCell>
+                       </TableRow>
+                     ) : (
+                       vendorResponses.filter(r => r.response_status === 'Completed').map((response) => (
                         <TableRow key={response.vendor_id}>
                           <TableCell className="font-medium">
                             {response.vendor_name}

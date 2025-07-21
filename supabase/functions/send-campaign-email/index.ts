@@ -72,6 +72,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully:", emailResponse);
 
+    // Insert email send record for tracking
+    await supabase
+      .from('campaign_email_sends')
+      .insert({
+        campaign_id: campaignId,
+        vendor_id: vendorId,
+        email_type: 'invitation',
+        status: 'sent'
+      });
+
     // Update response status
     await supabase
       .from('msme_responses')
