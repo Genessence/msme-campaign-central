@@ -59,6 +59,45 @@ export type Database = {
           },
         ]
       }
+      custom_forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          settings: Json | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          settings?: Json | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          settings?: Json | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_uploads: {
         Row: {
           campaign_id: string | null
@@ -140,13 +179,120 @@ export type Database = {
         }
         Relationships: []
       }
+      form_fields: {
+        Row: {
+          conditional_logic: Json | null
+          created_at: string
+          field_name: string
+          field_type: string
+          form_id: string
+          id: string
+          is_required: boolean | null
+          label: string
+          options: Json | null
+          order_index: number
+          validation_rules: Json | null
+        }
+        Insert: {
+          conditional_logic?: Json | null
+          created_at?: string
+          field_name: string
+          field_type: string
+          form_id: string
+          id?: string
+          is_required?: boolean | null
+          label: string
+          options?: Json | null
+          order_index?: number
+          validation_rules?: Json | null
+        }
+        Update: {
+          conditional_logic?: Json | null
+          created_at?: string
+          field_name?: string
+          field_type?: string
+          form_id?: string
+          id?: string
+          is_required?: boolean | null
+          label?: string
+          options?: Json | null
+          order_index?: number
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_fields_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_responses: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          form_id: string
+          id: string
+          ip_address: string | null
+          response_data: Json | null
+          submitted_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          form_id: string
+          id?: string
+          ip_address?: string | null
+          response_data?: Json | null
+          submitted_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          form_id?: string
+          id?: string
+          ip_address?: string | null
+          response_data?: Json | null
+          submitted_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_responses_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "msme_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_responses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       msme_campaigns: {
         Row: {
+          communication_only: boolean | null
           created_at: string
           created_by: string | null
           deadline: string | null
           description: string | null
           email_template_id: string | null
+          form_id: string | null
           id: string
           name: string
           status: Database["public"]["Enums"]["campaign_status"] | null
@@ -155,11 +301,13 @@ export type Database = {
           whatsapp_template_id: string | null
         }
         Insert: {
+          communication_only?: boolean | null
           created_at?: string
           created_by?: string | null
           deadline?: string | null
           description?: string | null
           email_template_id?: string | null
+          form_id?: string | null
           id?: string
           name: string
           status?: Database["public"]["Enums"]["campaign_status"] | null
@@ -168,11 +316,13 @@ export type Database = {
           whatsapp_template_id?: string | null
         }
         Update: {
+          communication_only?: boolean | null
           created_at?: string
           created_by?: string | null
           deadline?: string | null
           description?: string | null
           email_template_id?: string | null
+          form_id?: string | null
           id?: string
           name?: string
           status?: Database["public"]["Enums"]["campaign_status"] | null
@@ -186,6 +336,13 @@ export type Database = {
             columns: ["email_template_id"]
             isOneToOne: false
             referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "msme_campaigns_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
             referencedColumns: ["id"]
           },
           {
