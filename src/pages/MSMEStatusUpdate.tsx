@@ -268,15 +268,8 @@ export default function MSMEStatusUpdate() {
         if (updateError) throw updateError;
         vendorId = existingVendor.id;
       } else {
-        // Create new vendor
-        const { data: newVendor, error: insertError } = await supabase
-          .from('vendors')
-          .insert([vendorData])
-          .select('id')
-          .single();
-
-        if (insertError) throw insertError;
-        vendorId = newVendor.id;
+        // Vendor doesn't exist - prevent creation of new vendors
+        throw new Error(`Vendor code "${data.vendorCode}" not found. Please contact your administrator to register your vendor code first.`);
       }
 
       // Create response record
