@@ -229,7 +229,17 @@ export default function CampaignDetails() {
         description: `Campaign "${campaign.name}" is now being processed automatically. You can close this tab and the campaign will continue running.`,
       });
 
-      // Refresh campaign details after a short delay
+      // Set up polling to refresh campaign details every 10 seconds during execution
+      const pollInterval = setInterval(() => {
+        fetchCampaignDetails();
+      }, 10000);
+
+      // Stop polling after 10 minutes or when campaign is no longer active
+      setTimeout(() => {
+        clearInterval(pollInterval);
+      }, 600000);
+
+      // Initial refresh after a short delay
       setTimeout(() => {
         fetchCampaignDetails();
       }, 3000);
