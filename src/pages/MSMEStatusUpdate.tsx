@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, CheckCircle, Upload, FileText, Building, Shield } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
@@ -499,7 +500,7 @@ export default function MSMEStatusUpdate() {
             </div>
             <div className="mb-4">
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                MSME Status Portal
+                This portal is governed and managed by Amber Enterprises India Limited. In case of any issue, please contact Amber Corporate Sourcing.
               </h1>
               <p className="text-lg text-muted-foreground">Amber Compliance System</p>
             </div>
@@ -516,286 +517,313 @@ export default function MSMEStatusUpdate() {
 
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-              <CardTitle className="text-2xl">MSME Status Update Form</CardTitle>
+              <CardTitle className="text-2xl">Supplier Portal</CardTitle>
               <CardDescription className="text-blue-100">
-                Please provide your business information and current MSME status
+                Manage your supplier information and compliance requirements
               </CardDescription>
             </CardHeader>
             <CardContent className="p-8">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label htmlFor="vendorCode" className="text-lg font-semibold text-gray-700">
-                      Vendor Code <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="vendorCode"
-                      {...register('vendorCode')}
-                      placeholder="Enter your vendor code"
-                      className={`h-12 text-lg border-2 transition-all duration-200 ${
-                        errors.vendorCode 
-                          ? 'border-red-500 focus:border-red-500' 
-                          : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                      }`}
-                    />
-                    {loadingVendor && (
-                      <p className="text-sm text-blue-600 flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                        Loading vendor data...
-                      </p>
-                    )}
-                    {errors.vendorCode && (
-                      <p className="text-red-500 text-sm flex items-center">
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        {errors.vendorCode.message}
-                      </p>
-                    )}
+              <Tabs defaultValue="msme" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="msme">MSME Supplier Status</TabsTrigger>
+                  <TabsTrigger value="esg" disabled>ESG Data Management</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="msme" className="space-y-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">MSME Status Update Form</h3>
+                    <p className="text-gray-600">Please provide your business information and current MSME status</p>
                   </div>
+                  
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label htmlFor="vendorCode" className="text-lg font-semibold text-gray-700">
+                          Vendor Code <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="vendorCode"
+                          {...register('vendorCode')}
+                          placeholder="Enter your vendor code"
+                          className={`h-12 text-lg border-2 transition-all duration-200 ${
+                            errors.vendorCode 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                          }`}
+                        />
+                        {loadingVendor && (
+                          <p className="text-sm text-blue-600 flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                            Loading vendor data...
+                          </p>
+                        )}
+                        {errors.vendorCode && (
+                          <p className="text-red-500 text-sm flex items-center">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            {errors.vendorCode.message}
+                          </p>
+                        )}
+                      </div>
 
-                  <div className="space-y-3">
-                    <Label htmlFor="vendorName" className="text-lg font-semibold text-gray-700">
-                      Vendor Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="vendorName"
-                      {...register('vendorName')}
-                      placeholder="Enter your business name"
-                      className={`h-12 text-lg border-2 transition-all duration-200 ${
-                        errors.vendorName 
-                          ? 'border-red-500 focus:border-red-500' 
-                          : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                      }`}
-                    />
-                    {errors.vendorName && (
-                      <p className="text-red-500 text-sm flex items-center">
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        {errors.vendorName.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="businessAddress" className="text-lg font-semibold text-gray-700">
-                    Business Address <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="businessAddress"
-                    {...register('businessAddress')}
-                    placeholder="Enter your complete business address"
-                    rows={4}
-                    className={`text-lg border-2 transition-all duration-200 ${
-                      errors.businessAddress 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
-                  />
-                  {errors.businessAddress && (
-                    <p className="text-red-500 text-sm flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.businessAddress.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-lg font-semibold text-gray-700">
-                    Current MSME Status <span className="text-red-500">*</span>
-                  </Label>
-                  <Select onValueChange={(value) => setValue('msmeStatus', value as any)}>
-                    <SelectTrigger className={`h-12 text-lg border-2 transition-all duration-200 ${
-                      errors.msmeStatus 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}>
-                      <SelectValue placeholder="Select your MSME status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MSME Certified">MSME</SelectItem>
-                      <SelectItem value="Non MSME">Non MSME</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.msmeStatus && (
-                    <p className="text-red-500 text-sm flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.msmeStatus.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Conditional Fields for MSME Certified */}
-                {msmeStatus === 'MSME Certified' && (
-                  <div className="space-y-6 border-l-4 border-green-500 pl-6 bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-r-lg shadow-inner">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <h4 className="font-semibold text-green-800 text-lg">MSME Certification Details</h4>
+                      <div className="space-y-3">
+                        <Label htmlFor="vendorName" className="text-lg font-semibold text-gray-700">
+                          Vendor Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="vendorName"
+                          {...register('vendorName')}
+                          placeholder="Enter your business name"
+                          className={`h-12 text-lg border-2 transition-all duration-200 ${
+                            errors.vendorName 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                          }`}
+                        />
+                        {errors.vendorName && (
+                          <p className="text-red-500 text-sm flex items-center">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            {errors.vendorName.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    
+
+                    <div className="space-y-3">
+                      <Label htmlFor="businessAddress" className="text-lg font-semibold text-gray-700">
+                        Business Address <span className="text-red-500">*</span>
+                      </Label>
+                      <Textarea
+                        id="businessAddress"
+                        {...register('businessAddress')}
+                        placeholder="Enter your complete business address"
+                        rows={4}
+                        className={`text-lg border-2 transition-all duration-200 ${
+                          errors.businessAddress 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                        }`}
+                      />
+                      {errors.businessAddress && (
+                        <p className="text-red-500 text-sm flex items-center">
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          {errors.businessAddress.message}
+                        </p>
+                      )}
+                    </div>
+
                     <div className="space-y-3">
                       <Label className="text-lg font-semibold text-gray-700">
-                        MSME Category <span className="text-red-500">*</span>
+                        Current MSME Status <span className="text-red-500">*</span>
                       </Label>
-                      <Select onValueChange={(value) => setValue('msmeCategory', value as any)}>
+                      <Select onValueChange={(value) => setValue('msmeStatus', value as any)}>
                         <SelectTrigger className={`h-12 text-lg border-2 transition-all duration-200 ${
-                          errors.msmeCategory 
+                          errors.msmeStatus 
                             ? 'border-red-500 focus:border-red-500' 
-                            : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
                         }`}>
-                          <SelectValue placeholder="Select your enterprise category" />
+                          <SelectValue placeholder="Select your MSME status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Micro Enterprise">Micro Enterprise</SelectItem>
-                          <SelectItem value="Small Enterprise">Small Enterprise</SelectItem>
-                          <SelectItem value="Medium Enterprise">Medium Enterprise</SelectItem>
+                          <SelectItem value="MSME Certified">MSME</SelectItem>
+                          <SelectItem value="Non MSME">Non MSME</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.msmeCategory && (
+                      {errors.msmeStatus && (
                         <p className="text-red-500 text-sm flex items-center">
                           <AlertCircle className="h-4 w-4 mr-1" />
-                          {errors.msmeCategory.message}
+                          {errors.msmeStatus.message}
                         </p>
                       )}
                     </div>
 
-                    <div className="space-y-3">
-                      <Label htmlFor="udyamNumber" className="text-lg font-semibold text-gray-700">
-                        Udyam Registration Number <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="udyamNumber"
-                        {...register('udyamNumber')}
-                        placeholder="UDYAM-XX-XX-XXXXXXX"
-                        className={`h-12 text-lg border-2 transition-all duration-200 ${
-                          errors.udyamNumber 
-                            ? 'border-red-500 focus:border-red-500' 
-                            : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200'
-                        }`}
-                      />
-                      <p className="text-sm text-green-600 font-medium">
-                        Format: UDYAM-[State Code]-[Year]-[7 digits]
-                      </p>
-                      {errors.udyamNumber && (
-                        <p className="text-red-500 text-sm flex items-center">
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          {errors.udyamNumber.message}
-                        </p>
-                      )}
-                    </div>
+                    {/* Conditional Fields for MSME Certified */}
+                    {msmeStatus === 'MSME Certified' && (
+                      <div className="space-y-6 border-l-4 border-green-500 pl-6 bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-r-lg shadow-inner">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <h4 className="font-semibold text-green-800 text-lg">MSME Certification Details</h4>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <Label className="text-lg font-semibold text-gray-700">
+                            MSME Category <span className="text-red-500">*</span>
+                          </Label>
+                          <Select onValueChange={(value) => setValue('msmeCategory', value as any)}>
+                            <SelectTrigger className={`h-12 text-lg border-2 transition-all duration-200 ${
+                              errors.msmeCategory 
+                                ? 'border-red-500 focus:border-red-500' 
+                                : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200'
+                            }`}>
+                              <SelectValue placeholder="Select your enterprise category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Micro Enterprise">Micro Enterprise</SelectItem>
+                              <SelectItem value="Small Enterprise">Small Enterprise</SelectItem>
+                              <SelectItem value="Medium Enterprise">Medium Enterprise</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.msmeCategory && (
+                            <p className="text-red-500 text-sm flex items-center">
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              {errors.msmeCategory.message}
+                            </p>
+                          )}
+                        </div>
 
-                    <div className="space-y-3">
-                      <Label className="text-lg font-semibold text-gray-700">
-                        Certificate Upload <span className="text-red-500">*</span>
-                      </Label>
-                      <div 
-                        onClick={handleUploadClick}
-                        className={`border-2 border-dashed rounded-lg p-8 text-center hover:bg-green-50 transition-all duration-200 cursor-pointer ${
-                          uploadedFile 
-                            ? 'border-green-500 bg-green-50' 
-                            : errors.certificate 
-                              ? 'border-red-500 bg-red-50' 
-                              : 'border-gray-300 hover:border-green-400'
-                        }`}
+                        <div className="space-y-3">
+                          <Label htmlFor="udyamNumber" className="text-lg font-semibold text-gray-700">
+                            Udyam Registration Number <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="udyamNumber"
+                            {...register('udyamNumber')}
+                            placeholder="UDYAM-XX-XX-XXXXXXX"
+                            className={`h-12 text-lg border-2 transition-all duration-200 ${
+                              errors.udyamNumber 
+                                ? 'border-red-500 focus:border-red-500' 
+                                : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200'
+                            }`}
+                          />
+                          <p className="text-sm text-green-600 font-medium">
+                            Format: UDYAM-[State Code]-[Year]-[7 digits]
+                          </p>
+                          {errors.udyamNumber && (
+                            <p className="text-red-500 text-sm flex items-center">
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              {errors.udyamNumber.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-lg font-semibold text-gray-700">
+                            Certificate Upload <span className="text-red-500">*</span>
+                          </Label>
+                          <div 
+                            onClick={handleUploadClick}
+                            className={`border-2 border-dashed rounded-lg p-8 text-center hover:bg-green-50 transition-all duration-200 cursor-pointer ${
+                              uploadedFile 
+                                ? 'border-green-500 bg-green-50' 
+                                : errors.certificate 
+                                  ? 'border-red-500 bg-red-50' 
+                                  : 'border-gray-300 hover:border-green-400'
+                            }`}
+                          >
+                            {uploadedFile ? (
+                              <div className="flex items-center justify-center space-x-3">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                <div>
+                                  <p className="text-green-800 font-medium">{uploadedFile.name}</p>
+                                  <p className="text-sm text-green-600">
+                                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                                <p className="text-lg text-gray-600 font-medium mb-2">
+                                  Click to upload your MSME certificate
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Supports PDF, PNG, JPG (Max 10MB)
+                                </p>
+                              </div>
+                            )}
+                            <input
+                              type="file"
+                              id="certificate"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                            />
+                          </div>
+                          {errors.certificate && (
+                            <p className="text-red-500 text-sm flex items-center">
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              {String(errors.certificate.message)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Conditional Fields for Non MSME */}
+                    {msmeStatus === 'Non MSME' && (
+                      <div className="space-y-6 border-l-4 border-orange-500 pl-6 bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-r-lg shadow-inner">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="h-5 w-5 text-orange-600" />
+                          <h4 className="font-semibold text-orange-800 text-lg">Declaration</h4>
+                        </div>
+                        <p className="text-orange-700 font-medium">
+                          By checking this box, you confirm that your organization does not qualify for MSME certification.
+                        </p>
+                        <div className="flex items-start space-x-3 bg-white p-4 rounded-lg border border-orange-200">
+                          <Checkbox
+                            id="declaration"
+                            checked={watch('nonMsmeDeclaration')}
+                            onCheckedChange={(checked) => setValue('nonMsmeDeclaration', checked as boolean)}
+                            className={`mt-1 ${errors.nonMsmeDeclaration ? 'border-red-500' : 'border-orange-400'}`}
+                          />
+                          <Label htmlFor="declaration" className="text-gray-700 font-medium leading-relaxed cursor-pointer">
+                            I confirm that our organization does not qualify for MSME certification.
+                            <span className="text-red-500"> *</span>
+                          </Label>
+                        </div>
+                        {errors.nonMsmeDeclaration && (
+                          <p className="text-red-500 text-sm flex items-center">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            {errors.nonMsmeDeclaration.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
+                    {isSubmitting && (
+                      <div className="space-y-4 bg-blue-50 p-6 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-medium text-blue-800">Submitting your information...</span>
+                          <span className="text-lg text-blue-600 font-bold">{uploadProgress}%</span>
+                        </div>
+                        <Progress value={uploadProgress} className="h-3" />
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="flex justify-center pt-8">
+                      <Button
+                        type="submit"
+                        size="lg"
+                        disabled={isSubmitting}
+                        className="w-full md:w-auto px-12 py-4 text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
                       >
-                        {uploadedFile ? (
-                          <div className="flex items-center justify-center space-x-3">
-                            <CheckCircle className="h-8 w-8 text-green-600" />
-                            <div>
-                              <p className="text-green-800 font-medium">{uploadedFile.name}</p>
-                              <p className="text-sm text-green-600">
-                                {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
+                        {isSubmitting ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            <span>Submitting...</span>
                           </div>
                         ) : (
-                          <div>
-                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-lg text-gray-600 font-medium mb-2">
-                              Click to upload your MSME certificate
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Supports PDF, PNG, JPG (Max 10MB)
-                            </p>
-                          </div>
+                          'Submit'
                         )}
-                        <input
-                          type="file"
-                          id="certificate"
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                      </div>
-                      {errors.certificate && (
-                        <p className="text-red-500 text-sm flex items-center">
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          {String(errors.certificate.message)}
-                        </p>
-                      )}
+                      </Button>
                     </div>
-                  </div>
-                )}
-
-                {/* Conditional Fields for Non MSME */}
-                {msmeStatus === 'Non MSME' && (
-                  <div className="space-y-6 border-l-4 border-orange-500 pl-6 bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-r-lg shadow-inner">
-                    <div className="flex items-center space-x-2">
-                      <AlertCircle className="h-5 w-5 text-orange-600" />
-                      <h4 className="font-semibold text-orange-800 text-lg">Declaration</h4>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="esg" className="space-y-6">
+                  <div className="text-center py-12">
+                    <div className="mb-6">
+                      <Building className="h-16 w-16 mx-auto text-gray-400 mb-4" />
                     </div>
-                    <p className="text-orange-700 font-medium">
-                      By checking this box, you confirm that your organization does not qualify for MSME certification.
+                    <h3 className="text-xl font-semibold text-gray-700 mb-3">ESG Data Management</h3>
+                    <p className="text-gray-500 max-w-md mx-auto">
+                      ESG (Environmental, Social, and Governance) data management features will be available soon. 
+                      Stay tuned for updates on sustainability reporting and compliance tracking.
                     </p>
-                    <div className="flex items-start space-x-3 bg-white p-4 rounded-lg border border-orange-200">
-                      <Checkbox
-                        id="declaration"
-                        checked={watch('nonMsmeDeclaration')}
-                        onCheckedChange={(checked) => setValue('nonMsmeDeclaration', checked as boolean)}
-                        className={`mt-1 ${errors.nonMsmeDeclaration ? 'border-red-500' : 'border-orange-400'}`}
-                      />
-                      <Label htmlFor="declaration" className="text-gray-700 font-medium leading-relaxed cursor-pointer">
-                        I confirm that our organization does not qualify for MSME certification.
-                        <span className="text-red-500"> *</span>
-                      </Label>
-                    </div>
-                    {errors.nonMsmeDeclaration && (
-                      <p className="text-red-500 text-sm flex items-center">
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        {errors.nonMsmeDeclaration.message}
-                      </p>
-                    )}
                   </div>
-                )}
-
-                {/* Progress Bar */}
-                {isSubmitting && (
-                  <div className="space-y-4 bg-blue-50 p-6 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-medium text-blue-800">Submitting your information...</span>
-                      <span className="text-lg text-blue-600 font-bold">{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-3" />
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <div className="flex justify-center pt-8">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={isSubmitting}
-                    className="w-full md:w-auto px-12 py-4 text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Submitting...</span>
-                      </div>
-                    ) : (
-                      'Submit'
-                    )}
-                  </Button>
-                </div>
-              </form>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
