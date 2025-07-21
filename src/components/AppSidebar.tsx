@@ -6,8 +6,7 @@ import {
   MessageCircle, 
   BarChart3, 
   FileText,
-  Settings,
-  FormInput
+  Settings 
 } from "lucide-react";
 
 import {
@@ -25,7 +24,6 @@ import {
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Campaigns", url: "/campaigns", icon: Mail },
-  { title: "Forms", url: "/forms", icon: FormInput },
   { title: "Vendors", url: "/vendors", icon: Users },
   { title: "Templates", url: "/templates", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },

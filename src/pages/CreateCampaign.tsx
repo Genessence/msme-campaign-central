@@ -19,8 +19,6 @@ export interface CampaignFormData {
   selectedVendors: string[];
   emailTemplateId?: string;
   whatsappTemplateId?: string;
-  form_id?: string;
-  communication_only?: boolean;
 }
 
 const steps = [

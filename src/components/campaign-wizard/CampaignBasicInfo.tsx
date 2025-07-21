@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,19 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { CampaignFormData } from '@/pages/CreateCampaign';
-import { supabase } from '@/integrations/supabase/client';
-
-interface CustomForm {
-  id: string;
-  name: string;
-  title: string;
-  slug: string;
-}
 
 interface CampaignBasicInfoProps {
   data: CampaignFormData;
@@ -28,30 +18,6 @@ interface CampaignBasicInfoProps {
 
 export function CampaignBasicInfo({ data, onUpdate, onNext }: CampaignBasicInfoProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [availableForms, setAvailableForms] = useState<CustomForm[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchAvailableForms();
-  }, []);
-
-  const fetchAvailableForms = async () => {
-    setLoading(true);
-    try {
-      const { data: forms, error } = await supabase
-        .from('custom_forms')
-        .select('id, name, title, slug')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setAvailableForms(forms || []);
-    } catch (error) {
-      console.error('Error fetching forms:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,40 +111,6 @@ export function CampaignBasicInfo({ data, onUpdate, onNext }: CampaignBasicInfoP
             {errors.deadline && (
               <p className="text-sm text-destructive">{errors.deadline}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="form">Form Selection (Optional)</Label>
-            <Select
-              value={data.form_id || "none"}
-              onValueChange={(value) => onUpdate({ form_id: value === "none" ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a form or leave empty for communication only" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No form (Communication only)</SelectItem>
-                {availableForms.map((form) => (
-                  <SelectItem key={form.id} value={form.id}>
-                    {form.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Choose a custom form to collect responses, or leave empty for one-way communication.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="communication_only"
-              checked={data.communication_only || false}
-              onCheckedChange={(checked) => onUpdate({ communication_only: !!checked })}
-            />
-            <Label htmlFor="communication_only" className="text-sm">
-              Communication only (no responses expected)
-            </Label>
           </div>
 
           <div className="flex justify-end">
