@@ -67,14 +67,8 @@ export default function CreateCampaign() {
 
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsSubmitting(true);
-    setExecutionStatus('');
     
     try {
-      // Show initial status for large campaigns
-      if (!isDraft && formData.selectedVendors.length > 100) {
-        setExecutionStatus(`Creating campaign and preparing to send messages to ${formData.selectedVendors.length} vendors...`);
-      }
-
       const { data, error } = await supabase
         .from('msme_campaigns')
         .insert({
@@ -92,40 +86,19 @@ export default function CreateCampaign() {
 
       if (error) throw error;
 
-      // If not a draft, execute the campaign
       if (!isDraft && data) {
-        if (formData.selectedVendors.length > 100) {
-          setExecutionStatus(`Campaign created! Processing ${formData.selectedVendors.length} vendors in batches. This may take a few minutes...`);
-        }
-
-        const executeResponse = await supabase.functions.invoke('execute-campaign', {
-          body: { campaignId: data.id }
+        // Show launching state and redirect immediately
+        toast({
+          title: "Campaign Launching",
+          description: `Campaign "${formData.name}" is being launched! Emails are being processed in the background. Check campaign details for progress.`,
         });
 
-        if (executeResponse.error) {
-          console.error('Campaign execution error:', executeResponse.error);
-          toast({
-            title: "Campaign Created but Execution Failed",
-            description: "Campaign was saved but messages could not be sent. Please try again from the campaigns page.",
-            variant: "destructive",
-          });
-        } else {
-          const { emailsSent, whatsappSent, totalVendors, errors } = executeResponse.data;
-          
-          let successMessage = `Campaign "${formData.name}" launched successfully!`;
-          if (totalVendors) {
-            successMessage += ` Processed ${totalVendors} vendors: ${emailsSent} emails and ${whatsappSent} WhatsApp messages sent.`;
-          }
-          
-          if (errors && errors.length > 0) {
-            successMessage += ` Note: ${errors.length} messages failed to send.`;
-          }
-
-          toast({
-            title: "Campaign Launched Successfully",
-            description: successMessage,
-          });
-        }
+        // Start campaign execution in background (don't await)
+        supabase.functions.invoke('execute-campaign', {
+          body: { campaignId: data.id }
+        }).catch(error => {
+          console.error('Campaign execution error:', error);
+        });
       } else {
         toast({
           title: "Campaign Saved",
@@ -133,6 +106,7 @@ export default function CreateCampaign() {
         });
       }
 
+      // Redirect immediately
       navigate('/campaigns');
     } catch (error) {
       console.error('Campaign creation error:', error);
@@ -143,7 +117,6 @@ export default function CreateCampaign() {
       });
     } finally {
       setIsSubmitting(false);
-      setExecutionStatus('');
     }
   };
 
