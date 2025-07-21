@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle } from 'lucide-react';
+import { CheckCircle, Circle, Clock } from 'lucide-react';
 import { CampaignBasicInfo } from '@/components/campaign-wizard/CampaignBasicInfo';
 import { VendorSelection } from '@/components/campaign-wizard/VendorSelection';
 import { TemplateSelection } from '@/components/campaign-wizard/TemplateSelection';
@@ -11,6 +12,7 @@ import { CampaignReview } from '@/components/campaign-wizard/CampaignReview';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface CampaignFormData {
   name: string;
@@ -37,6 +39,7 @@ export default function CreateCampaign() {
     selectedVendors: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [executionStatus, setExecutionStatus] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -64,7 +67,14 @@ export default function CreateCampaign() {
 
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsSubmitting(true);
+    setExecutionStatus('');
+    
     try {
+      // Show initial status for large campaigns
+      if (!isDraft && formData.selectedVendors.length > 100) {
+        setExecutionStatus(`Creating campaign and preparing to send messages to ${formData.selectedVendors.length} vendors...`);
+      }
+
       const { data, error } = await supabase
         .from('msme_campaigns')
         .insert({
@@ -84,6 +94,10 @@ export default function CreateCampaign() {
 
       // If not a draft, execute the campaign
       if (!isDraft && data) {
+        if (formData.selectedVendors.length > 100) {
+          setExecutionStatus(`Campaign created! Processing ${formData.selectedVendors.length} vendors in batches. This may take a few minutes...`);
+        }
+
         const executeResponse = await supabase.functions.invoke('execute-campaign', {
           body: { campaignId: data.id }
         });
@@ -96,10 +110,20 @@ export default function CreateCampaign() {
             variant: "destructive",
           });
         } else {
-          const { emailsSent, whatsappSent } = executeResponse.data;
+          const { emailsSent, whatsappSent, totalVendors, errors } = executeResponse.data;
+          
+          let successMessage = `Campaign "${formData.name}" launched successfully!`;
+          if (totalVendors) {
+            successMessage += ` Processed ${totalVendors} vendors: ${emailsSent} emails and ${whatsappSent} WhatsApp messages sent.`;
+          }
+          
+          if (errors && errors.length > 0) {
+            successMessage += ` Note: ${errors.length} messages failed to send.`;
+          }
+
           toast({
             title: "Campaign Launched Successfully",
-            description: `Campaign "${formData.name}" launched with ${emailsSent} emails and ${whatsappSent} WhatsApp messages sent.`,
+            description: successMessage,
           });
         }
       } else {
@@ -119,6 +143,7 @@ export default function CreateCampaign() {
       });
     } finally {
       setIsSubmitting(false);
+      setExecutionStatus('');
     }
   };
 
@@ -179,10 +204,22 @@ export default function CreateCampaign() {
         <Button
           variant="outline"
           onClick={() => navigate('/campaigns')}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
       </div>
+
+      {/* Execution Status */}
+      {executionStatus && (
+        <Alert>
+          <Clock className="h-4 w-4" />
+          <AlertDescription className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+            {executionStatus}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Progress Indicator */}
       <Card>
