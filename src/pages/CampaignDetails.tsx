@@ -39,6 +39,16 @@ interface VendorResponse {
   form_data: any;
 }
 
+interface EmailSendRecord {
+  vendor_id: string;
+  vendor_name: string;
+  vendor_email: string | null;
+  vendor_phone: string | null;
+  sent_at: string;
+  email_type: string;
+  status: string;
+}
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'Active': return 'bg-green-100 text-green-800 border-green-200';
@@ -64,6 +74,7 @@ export default function CampaignDetails() {
   const { toast } = useToast();
   const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
   const [vendorResponses, setVendorResponses] = useState<VendorResponse[]>([]);
+  const [emailSends, setEmailSends] = useState<EmailSendRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,6 +125,39 @@ export default function CampaignDetails() {
       })) || [];
 
       setVendorResponses(formattedResponses);
+
+      // Fetch email send records
+      const { data: emailSendsData, error: emailSendsError } = await supabase
+        .from('campaign_email_sends')
+        .select(`
+          vendor_id,
+          sent_at,
+          email_type,
+          status,
+          vendors (
+            vendor_name,
+            email,
+            phone
+          )
+        `)
+        .eq('campaign_id', id)
+        .order('sent_at', { ascending: false });
+
+      if (emailSendsError) {
+        console.error('Error fetching email sends:', emailSendsError);
+      } else {
+        const formattedEmailSends = emailSendsData?.map(send => ({
+          vendor_id: send.vendor_id,
+          vendor_name: send.vendors?.vendor_name || 'Unknown Vendor',
+          vendor_email: send.vendors?.email || null,
+          vendor_phone: send.vendors?.phone || null,
+          sent_at: send.sent_at,
+          email_type: send.email_type,
+          status: send.status,
+        })) || [];
+
+        setEmailSends(formattedEmailSends);
+      }
     } catch (error) {
       console.error('Error fetching campaign details:', error);
       toast({
@@ -182,6 +226,7 @@ export default function CampaignDetails() {
 
   const totalVendors = campaign.target_vendors?.length || 0;
   const completedResponses = vendorResponses.length; // Now only contains completed MSME submissions
+  const emailsSent = emailSends.length;
   const pendingResponses = totalVendors - completedResponses; // Vendors who haven't submitted yet
   const progressPercentage = totalVendors > 0 ? (completedResponses / totalVendors) * 100 : 0;
 
@@ -212,7 +257,7 @@ export default function CampaignDetails() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
@@ -221,6 +266,17 @@ export default function CampaignDetails() {
           <CardContent>
             <div className="text-2xl font-bold">{totalVendors}</div>
             <p className="text-xs text-muted-foreground">Targeted for this campaign</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
+            <Mail className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{emailsSent}</div>
+            <p className="text-xs text-muted-foreground">Emails delivered</p>
           </CardContent>
         </Card>
 
@@ -262,6 +318,7 @@ export default function CampaignDetails() {
       <Tabs defaultValue="responses" className="space-y-4">
         <TabsList>
           <TabsTrigger value="responses">Vendor Responses</TabsTrigger>
+          <TabsTrigger value="emails">Email Tracking</TabsTrigger>
           <TabsTrigger value="details">Campaign Details</TabsTrigger>
         </TabsList>
 
@@ -324,6 +381,73 @@ export default function CampaignDetails() {
                               ? new Date(response.submitted_at).toLocaleDateString()
                               : 'Not submitted'
                             }
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="emails">
+          <Card>
+            <CardHeader>
+              <CardTitle>Email Delivery Status</CardTitle>
+              <CardDescription>
+                Track which vendors have received campaign emails
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vendor Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Sent At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {emailSends.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          No emails sent for this campaign yet.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      emailSends.map((send, index) => (
+                        <TableRow key={`${send.vendor_id}-${index}`}>
+                          <TableCell className="font-medium">
+                            {send.vendor_name}
+                          </TableCell>
+                          <TableCell>
+                            {send.vendor_email && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <Mail className="h-3 w-3" />
+                                {send.vendor_email}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {send.email_type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {send.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                              {send.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
+                              {send.status === 'bounced' && <XCircle className="h-4 w-4 text-orange-600" />}
+                              <span className="text-sm capitalize">{send.status}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(send.sent_at).toLocaleString()}
                           </TableCell>
                         </TableRow>
                       ))
