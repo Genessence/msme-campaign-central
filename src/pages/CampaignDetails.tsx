@@ -76,6 +76,7 @@ export default function CampaignDetails() {
   const [vendorResponses, setVendorResponses] = useState<VendorResponse[]>([]);
   const [emailSends, setEmailSends] = useState<EmailSendRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -169,6 +170,64 @@ export default function CampaignDetails() {
     }
   };
 
+  const handleExecuteCampaign = async () => {
+    if (!campaign) return;
+    
+    setExecuting(true);
+    try {
+      // Update campaign status to Active if it's currently Draft
+      if (campaign.status === 'Draft') {
+        const { error: statusError } = await supabase
+          .from('msme_campaigns')
+          .update({ status: 'Active' })
+          .eq('id', campaign.id);
+
+        if (statusError) throw statusError;
+      }
+
+      // Call the new chunked execute-campaign function
+      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
+        body: { 
+          campaignId: campaign.id,
+          chunkSize: 50,
+          startIndex: 0
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign Execution Started",
+        description: `Campaign "${campaign.name}" is now being executed in chunks. The process will continue automatically until all vendors are processed.`,
+      });
+
+      // Set up polling to refresh campaign details periodically
+      const pollInterval = setInterval(() => {
+        fetchCampaignDetails();
+      }, 10000); // Poll every 10 seconds
+
+      // Stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+      }, 300000);
+
+      // Initial refresh after a short delay
+      setTimeout(() => {
+        fetchCampaignDetails();
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error executing campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to execute campaign. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   const handleEndCampaign = async () => {
     if (!campaign) return;
     
@@ -247,6 +306,16 @@ export default function CampaignDetails() {
           <Badge variant="outline" className={getStatusColor(campaign.status)}>
             {campaign.status}
           </Badge>
+          {campaign.status === 'Draft' && (
+            <Button onClick={handleExecuteCampaign} disabled={executing}>
+              {executing ? 'Executing...' : 'Execute Campaign'}
+            </Button>
+          )}
+          {campaign.status === 'Active' && emailsSent < totalVendors && (
+            <Button variant="outline" onClick={handleExecuteCampaign} disabled={executing}>
+              {executing ? 'Resuming...' : 'Resume Campaign'}
+            </Button>
+          )}
           {campaign.status === 'Active' && (
             <Button variant="destructive" onClick={handleEndCampaign}>
               End Campaign
