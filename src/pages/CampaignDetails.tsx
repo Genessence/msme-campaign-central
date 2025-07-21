@@ -81,6 +81,29 @@ export default function CampaignDetails() {
   useEffect(() => {
     if (id) {
       fetchCampaignDetails();
+      
+      // Set up real-time subscription for email sends
+      const channel = supabase
+        .channel('campaign-email-sends')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'campaign_email_sends',
+            filter: `campaign_id=eq.${id}`
+          },
+          (payload) => {
+            console.log('Real-time email send update:', payload);
+            // Refresh the campaign details when new emails are sent
+            fetchCampaignDetails();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [id]);
 
