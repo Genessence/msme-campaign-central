@@ -228,9 +228,42 @@ export default function EditWhatsAppTemplate() {
                 rows={8}
                 required
               />
-              <p className="text-sm text-muted-foreground">
-                Use variables in your message like {"{vendor_name}"} to personalize messages
-              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <p className="text-sm text-muted-foreground flex-1">
+                  Use variables in your message like {"{vendor_name}"} to personalize messages
+                </p>
+                {formData.variables.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {formData.variables.slice(0, 3).map((variable) => (
+                      <Button
+                        key={variable}
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.getElementById('content') as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = textarea.value;
+                            const before = text.substring(0, start);
+                            const after = text.substring(end);
+                            const newText = before + `{${variable}}` + after;
+                            setFormData(prev => ({ ...prev, content: newText }));
+                            setTimeout(() => {
+                              textarea.focus();
+                              textarea.setSelectionRange(start + variable.length + 2, start + variable.length + 2);
+                            }, 0);
+                          }
+                        }}
+                        className="text-xs h-6 px-2"
+                      >
+                        Insert {variable}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Preview */}

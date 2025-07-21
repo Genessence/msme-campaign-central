@@ -245,7 +245,7 @@ export default function MSMEStatusUpdate() {
         vendor_code: data.vendorCode,
         vendor_name: data.vendorName,
         location: data.businessAddress,
-        msme_status: data.msmeStatus as any,
+        msme_status: data.msmeStatus === 'MSME Certified' ? 'MSME' : data.msmeStatus as any,
         msme_category: data.msmeStatus === 'MSME Certified' 
           ? (data.msmeCategory === 'Micro Enterprise' ? 'Micro' 
              : data.msmeCategory === 'Small Enterprise' ? 'Small' 
