@@ -215,7 +215,7 @@ async function processChunkEmails(vendors: any[], campaign: any, supabaseUrl: st
       }
 
       try {
-        const { data, error } = await fetch(`${supabaseUrl}/functions/v1/send-campaign-email`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-campaign-email`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -232,12 +232,12 @@ async function processChunkEmails(vendors: any[], campaign: any, supabaseUrl: st
           }),
         });
 
-        if (!data.ok) {
-          const errorText = await data.text();
-          throw new Error(`HTTP ${data.status}: ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
-        const result = await data.json();
+        const result = await response.json();
         if (result.success) {
           sent++;
           console.log(`✓ Email sent to ${vendor.vendor_name} (${vendor.email})`);
