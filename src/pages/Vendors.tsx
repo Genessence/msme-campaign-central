@@ -715,6 +715,8 @@ export default function Vendors() {
 
       if (docError) throw docError;
 
+      console.log(`Found ${documents?.length || 0} documents to download`);
+
       if (!documents || documents.length === 0) {
         toast({
           title: "No Files Found",
@@ -725,29 +727,83 @@ export default function Vendors() {
       }
 
       const zip = new JSZip();
+      let downloadedCount = 0;
+      let skippedCount = 0;
 
-      // Download each file and add to zip
-      for (const doc of documents) {
-        try {
-          const { data: fileData, error: downloadError } = await supabase.storage
-            .from('msme-documents')
-            .download(doc.file_name);
+      // Process files in batches to avoid memory issues
+      const BATCH_SIZE = 20;
+      for (let i = 0; i < documents.length; i += BATCH_SIZE) {
+        const batch = documents.slice(i, i + BATCH_SIZE);
+        
+        toast({
+          title: "Processing Files",
+          description: `Processing ${i + 1}-${Math.min(i + BATCH_SIZE, documents.length)} of ${documents.length} files...`,
+        });
 
-          if (downloadError) {
-            console.error(`Error downloading ${doc.file_name}:`, downloadError);
-            continue; // Skip this file and continue with others
+        // Download batch concurrently but limit concurrency
+        const batchPromises = batch.map(async (doc) => {
+          try {
+            // Skip files with zero size
+            if (doc.file_size === 0) {
+              console.log(`Skipping empty file: ${doc.file_name}`);
+              skippedCount++;
+              return;
+            }
+
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('msme-documents')
+              .download(doc.file_name);
+
+            if (downloadError) {
+              console.error(`Error downloading ${doc.file_name}:`, downloadError);
+              skippedCount++;
+              return;
+            }
+
+            if (fileData && fileData.size > 0) {
+              // Create a unique filename to avoid conflicts
+              const uniqueFileName = `${doc.vendor_id?.slice(0, 8)}_${doc.file_name}`;
+              zip.file(uniqueFileName, fileData);
+              downloadedCount++;
+              console.log(`Added to zip: ${uniqueFileName} (${fileData.size} bytes)`);
+            } else {
+              console.log(`Empty file data for: ${doc.file_name}`);
+              skippedCount++;
+            }
+          } catch (error) {
+            console.error(`Error processing ${doc.file_name}:`, error);
+            skippedCount++;
           }
+        });
 
-          if (fileData) {
-            zip.file(doc.file_name, fileData);
-          }
-        } catch (error) {
-          console.error(`Error processing ${doc.file_name}:`, error);
-        }
+        await Promise.all(batchPromises);
       }
 
+      console.log(`Download complete. Downloaded: ${downloadedCount}, Skipped: ${skippedCount}`);
+
+      if (downloadedCount === 0) {
+        toast({
+          title: "No Valid Files",
+          description: "No valid files were found to download",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Creating ZIP",
+        description: "Compressing files for download...",
+      });
+
       // Generate and download the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 }
+      });
+      
+      console.log(`ZIP file size: ${zipBlob.size} bytes`);
+
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
@@ -759,14 +815,14 @@ export default function Vendors() {
 
       toast({
         title: "Download Complete",
-        description: `Downloaded ${documents.length} files successfully`,
+        description: `Successfully downloaded ${downloadedCount} files${skippedCount > 0 ? ` (${skippedCount} files skipped)` : ''}`,
       });
 
     } catch (error) {
       console.error('Error downloading attachments:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download vendor files",
+        description: error instanceof Error ? error.message : "Failed to download vendor files",
         variant: "destructive",
       });
     }
