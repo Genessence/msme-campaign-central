@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Download, Filter } from 'lucide-react';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { CalendarIcon, Download, Filter, Search, X } from 'lucide-react';
+import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,8 +34,11 @@ interface MSMESubmission {
 export function MSMESubmissions() {
   const [submissions, setSubmissions] = useState<MSMESubmission[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<MSMESubmission[]>([]);
+  const [campaigns, setCampaigns] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
 
@@ -84,6 +90,16 @@ export function MSMESubmissions() {
       setSubmissions(allSubmissions);
       setFilteredSubmissions(allSubmissions);
       setTotalCount(allSubmissions.length);
+
+      // Fetch unique campaigns for filter dropdown
+      const uniqueCampaigns = Array.from(
+        new Map(allSubmissions
+          .filter(s => s.campaign)
+          .map(s => [s.campaign!.name, { id: s.campaign_id!, name: s.campaign!.name }])
+        ).values()
+      );
+      setCampaigns(uniqueCampaigns);
+
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast({
@@ -96,26 +112,51 @@ export function MSMESubmissions() {
     }
   };
 
-  const filterByDate = (date: Date | undefined) => {
-    if (!date) {
-      setFilteredSubmissions(submissions);
-      return;
+  const applyFilters = () => {
+    let filtered = submissions;
+
+    // Search filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(submission => 
+        submission.vendor?.vendor_code?.toLowerCase().includes(search) ||
+        submission.vendor?.vendor_name?.toLowerCase().includes(search)
+      );
     }
 
-    const startDate = startOfDay(date);
-    const endDate = endOfDay(date);
+    // Campaign filter
+    if (selectedCampaign !== 'all') {
+      filtered = filtered.filter(submission => submission.campaign_id === selectedCampaign);
+    }
 
-    const filtered = submissions.filter(submission => {
-      if (!submission.submitted_at) return false;
-      const submissionDate = new Date(submission.submitted_at);
-      return submissionDate >= startDate && submissionDate <= endDate;
-    });
+    // Date range filter
+    if (dateRange?.from && dateRange?.to) {
+      const startDate = startOfDay(dateRange.from);
+      const endDate = endOfDay(dateRange.to);
+      
+      filtered = filtered.filter(submission => {
+        if (!submission.submitted_at) return false;
+        const submissionDate = new Date(submission.submitted_at);
+        return isWithinInterval(submissionDate, { start: startDate, end: endDate });
+      });
+    } else if (dateRange?.from) {
+      const startDate = startOfDay(dateRange.from);
+      const endDate = endOfDay(dateRange.from);
+      
+      filtered = filtered.filter(submission => {
+        if (!submission.submitted_at) return false;
+        const submissionDate = new Date(submission.submitted_at);
+        return isWithinInterval(submissionDate, { start: startDate, end: endDate });
+      });
+    }
 
     setFilteredSubmissions(filtered);
   };
 
-  const clearDateFilter = () => {
-    setSelectedDate(undefined);
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedCampaign('all');
+    setDateRange(undefined);
     setFilteredSubmissions(submissions);
   };
 
@@ -146,7 +187,21 @@ export function MSMESubmissions() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `msme_submissions_${selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all'}.csv`;
+    
+    // Create filename based on active filters
+    let filename = 'msme_submissions';
+    if (searchTerm) filename += `_search_${searchTerm.replace(/\s+/g, '_')}`;
+    if (selectedCampaign !== 'all') {
+      const campaignName = campaigns.find(c => c.id === selectedCampaign)?.name || selectedCampaign;
+      filename += `_${campaignName.replace(/\s+/g, '_')}`;
+    }
+    if (dateRange?.from) {
+      filename += `_${format(dateRange.from, 'yyyy-MM-dd')}`;
+      if (dateRange.to) filename += `_to_${format(dateRange.to, 'yyyy-MM-dd')}`;
+    }
+    filename += '.csv';
+    
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -162,8 +217,8 @@ export function MSMESubmissions() {
   }, []);
 
   useEffect(() => {
-    filterByDate(selectedDate);
-  }, [selectedDate, submissions]);
+    applyFilters();
+  }, [searchTerm, selectedCampaign, dateRange, submissions]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -179,56 +234,116 @@ export function MSMESubmissions() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-          <div>
-            <CardTitle>MSME Form Submissions</CardTitle>
-            <CardDescription>
-              Vendors who have submitted MSME status update forms
-            </CardDescription>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div>
+              <CardTitle>MSME Form Submissions</CardTitle>
+              <CardDescription>
+                Vendors who have submitted MSME status update forms
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Filter by date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                  className="pointer-events-auto"
+
+          {/* Filters */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 max-w-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by vendor code or name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
-              </PopoverContent>
-            </Popover>
-            
-            {selectedDate && (
-              <Button variant="outline" size="sm" onClick={clearDateFilter}>
-                Clear Filter
+              </div>
+            </div>
+
+            {/* Campaign Filter */}
+            <div className="min-w-[200px]">
+              <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by campaign" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Campaigns</SelectItem>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id}>
+                      {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="min-w-[250px]">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      "Select date range"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Clear Filters */}
+            {(searchTerm || selectedCampaign !== 'all' || dateRange) && (
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
               </Button>
             )}
-            
-            <Button variant="outline" size="sm" onClick={exportToCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
           </div>
         </div>
         
         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
           <span>Total Submitted: <strong>{totalCount}</strong></span>
           <span>Showing: <strong>{filteredSubmissions.length}</strong></span>
-          {selectedDate && (
-            <span>Date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong></span>
+          {dateRange?.from && (
+            <span>
+              Date Range: <strong>
+                {dateRange.to ? 
+                  `${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd, yyyy")}` :
+                  format(dateRange.from, "MMM dd, yyyy")
+                }
+              </strong>
+            </span>
           )}
         </div>
       </CardHeader>
@@ -311,8 +426,8 @@ export function MSMESubmissions() {
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            {selectedDate ? 
-              `No form submissions found for ${format(selectedDate, "MMM dd, yyyy")}` : 
+            {searchTerm || selectedCampaign !== 'all' || dateRange ? 
+              "No submissions match the current filters" : 
               "No MSME form submissions found."
             }
           </div>
