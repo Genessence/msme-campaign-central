@@ -272,9 +272,17 @@ export default function MSMEStatusUpdate() {
         throw new Error(`Vendor code "${data.vendorCode}" not found. Please contact your administrator to register your vendor code first.`);
       }
 
+      // Get active campaign to link the response
+      const { data: activeCampaign } = await supabase
+        .from('msme_campaigns')
+        .select('id')
+        .eq('status', 'Active')
+        .maybeSingle();
+
       // Create response record
       const responseData = {
         vendor_id: vendorId,
+        campaign_id: activeCampaign?.id || null,
         response_status: 'Completed' as any,
         form_data: {
           vendorCode: data.vendorCode,
