@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useUploadLogs, useClearUploadLogs } from '@/hooks/useUploadLogs';
+import { MSMESubmissions } from '@/components/MSMESubmissions';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
@@ -185,6 +186,9 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* MSME Submissions */}
+      <MSMESubmissions />
 
       {/* Upload Logs */}
       <Card>
