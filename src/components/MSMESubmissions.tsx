@@ -40,33 +40,50 @@ export function MSMESubmissions() {
     try {
       setLoading(true);
       
-      // Fetch submissions with vendor and campaign details
-      const { data: submissionsData, error } = await supabase
-        .from('msme_responses')
-        .select(`
-          *,
-          vendors:vendor_id (
-            vendor_code,
-            vendor_name
-          ),
-          msme_campaigns:campaign_id (
-            name
-          )
-        `)
-        .order('submitted_at', { ascending: false })
-        .limit(1000);
+      // Batch fetching to handle more than 1000 records
+      const BATCH_SIZE = 1000;
+      let allSubmissions: MSMESubmission[] = [];
+      let hasMore = true;
+      let offset = 0;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data: submissionsData, error } = await supabase
+          .from('msme_responses')
+          .select(`
+            *,
+            vendors:vendor_id (
+              vendor_code,
+              vendor_name
+            ),
+            msme_campaigns:campaign_id (
+              name
+            )
+          `)
+          .not('submitted_at', 'is', null) // Only get actual submissions
+          .order('submitted_at', { ascending: false })
+          .range(offset, offset + BATCH_SIZE - 1);
 
-      const processedSubmissions = (submissionsData || []).map(submission => ({
-        ...submission,
-        vendor: submission.vendors,
-        campaign: submission.msme_campaigns
-      })) as MSMESubmission[];
+        if (error) throw error;
 
-      setSubmissions(processedSubmissions);
-      setFilteredSubmissions(processedSubmissions);
-      setTotalCount(processedSubmissions.length);
+        const batchSubmissions = (submissionsData || []).map(submission => ({
+          ...submission,
+          vendor: submission.vendors,
+          campaign: submission.msme_campaigns
+        })) as MSMESubmission[];
+
+        allSubmissions = [...allSubmissions, ...batchSubmissions];
+        
+        // Check if we got less than batch size (means no more data)
+        hasMore = submissionsData && submissionsData.length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+
+        console.log(`Fetched batch ${Math.ceil(offset / BATCH_SIZE)}: ${batchSubmissions.length} submissions`);
+      }
+
+      console.log(`Total submissions fetched: ${allSubmissions.length}`);
+      setSubmissions(allSubmissions);
+      setFilteredSubmissions(allSubmissions);
+      setTotalCount(allSubmissions.length);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast({
@@ -166,7 +183,7 @@ export function MSMESubmissions() {
           <div>
             <CardTitle>MSME Form Submissions</CardTitle>
             <CardDescription>
-              Track vendor form submissions with detailed information and filtering
+              Vendors who have submitted MSME status update forms
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
@@ -208,8 +225,8 @@ export function MSMESubmissions() {
         </div>
         
         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-          <span>Total Submissions: <strong>{totalCount}</strong></span>
-          <span>Filtered Results: <strong>{filteredSubmissions.length}</strong></span>
+          <span>Total Submitted: <strong>{totalCount}</strong></span>
+          <span>Showing: <strong>{filteredSubmissions.length}</strong></span>
           {selectedDate && (
             <span>Date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong></span>
           )}
@@ -218,7 +235,7 @@ export function MSMESubmissions() {
       
       <CardContent>
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading submissions...</div>
+          <div className="text-center py-8 text-muted-foreground">Loading submitted forms...</div>
         ) : filteredSubmissions.length > 0 ? (
           <div className="border rounded-md overflow-hidden">
             <ScrollArea className="h-[500px] w-full">
@@ -295,7 +312,7 @@ export function MSMESubmissions() {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             {selectedDate ? 
-              `No submissions found for ${format(selectedDate, "MMM dd, yyyy")}` : 
+              `No form submissions found for ${format(selectedDate, "MMM dd, yyyy")}` : 
               "No MSME form submissions found."
             }
           </div>
