@@ -448,9 +448,59 @@ export default function MSMEStatusUpdate() {
 
     } catch (error) {
       console.error('Form submission error:', error);
+      
+      // Determine specific error message based on error type
+      let errorTitle = "Submission Failed";
+      let errorDescription = "An unexpected error occurred. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Vendor code') && error.message.includes('not found')) {
+          errorTitle = "Vendor Not Found";
+          errorDescription = error.message;
+        } else if (error.message.includes('enum') || error.message.includes('response_status')) {
+          errorTitle = "System Error";
+          errorDescription = "A system configuration error occurred. Please contact your administrator.";
+        } else if (error.message.includes('Failed to upload')) {
+          errorTitle = "File Upload Failed";
+          errorDescription = error.message;
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorTitle = "Connection Error";
+          errorDescription = "Please check your internet connection and try again.";
+        } else {
+          errorDescription = error.message;
+        }
+      }
+      
+      // Log detailed error for debugging
+      console.error('Detailed error information:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        formData: data,
+        timestamp: new Date().toISOString()
+      });
+
+      // Try to log the error to database for admin tracking
+      try {
+        await supabase
+          .from('msme_responses')
+          .insert([{
+            vendor_id: null,
+            campaign_id: null,
+            response_status: 'Failed' as any,
+            form_data: {
+              ...data,
+              error: error instanceof Error ? error.message : 'Unknown error',
+              errorType: 'submission_failed',
+              timestamp: new Date().toISOString()
+            }
+          }]);
+      } catch (logError) {
+        console.error('Failed to log error to database:', logError);
+      }
+      
       toast({
-        title: "Submission Failed",
-        description: "Please try again or contact support if the problem persists.",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {

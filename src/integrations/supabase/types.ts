@@ -578,7 +578,7 @@ export type Database = {
         | "MSME Application Pending"
         | "Others"
         | "MSME"
-      response_status: "Pending" | "Completed" | "Partial"
+      response_status: "Pending" | "Completed" | "Partial" | "Failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -715,7 +715,7 @@ export const Constants = {
         "Others",
         "MSME",
       ],
-      response_status: ["Pending", "Completed", "Partial"],
+      response_status: ["Pending", "Completed", "Partial", "Failed"],
     },
   },
 } as const
