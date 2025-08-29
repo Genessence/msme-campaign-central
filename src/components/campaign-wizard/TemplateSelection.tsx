@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Mail, MessageCircle, Plus } from 'lucide-react';
-import { fastApiClient } from '@/lib/fastapi-client';
+import fastApiClient from '@/lib/fastapi-client';
 import { CampaignFormData } from '@/pages/CreateCampaign';
 
 interface TemplateSelectionProps {
@@ -19,7 +19,7 @@ interface EmailTemplate {
   id: string;
   name: string;
   subject: string;
-  content: string;
+  body: string; // This should match backend schema
   variables?: string[];
   created_at?: string;
   updated_at?: string;
@@ -34,6 +34,39 @@ interface WhatsAppTemplate {
   updated_at?: string;
 }
 
+// Fallback templates in case API is not available
+const FALLBACK_EMAIL_TEMPLATES: EmailTemplate[] = [
+  {
+    id: 'email-fallback-1',
+    name: 'Basic MSME Status Update',
+    subject: 'MSME Status Update Required',
+    body: 'Dear {vendor_name}, Please update your MSME status information. Best regards, Amber Compliance Team',
+    variables: ['vendor_name']
+  },
+  {
+    id: 'email-fallback-2', 
+    name: 'Welcome Email',
+    subject: 'Welcome to Our MSME Program',
+    body: 'Dear {vendor_name}, Welcome to our vendor program. We look forward to working with {company_name}.',
+    variables: ['vendor_name', 'company_name']
+  }
+];
+
+const FALLBACK_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
+  {
+    id: 'whatsapp-fallback-1',
+    name: 'MSME Status WhatsApp',
+    content: 'Hi {vendor_name}, please update your MSME status via our portal. Thank you!',
+    variables: ['vendor_name']
+  },
+  {
+    id: 'whatsapp-fallback-2',
+    name: 'Status Update',
+    content: 'Hi {vendor_name}, your MSME status has been updated to {status}. Please login to view details.',
+    variables: ['vendor_name', 'status']
+  }
+];
+
 export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSelectionProps) {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>([]);
@@ -46,68 +79,110 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
 
   const fetchTemplates = async () => {
     try {
+      setLoading(true);
       setError(null);
       console.log('Fetching templates from FastAPI...');
       
-      // Fetch email and WhatsApp templates separately
-      const [emailTemplates, whatsappTemplates] = await Promise.all([
-        fastApiClient.templates.getAll('email'),
-        fastApiClient.templates.getAll('whatsapp')
-      ]);
+      // First try to fetch templates from the API
+      let emailTemplates: EmailTemplate[] = [];
+      let whatsappTemplates: WhatsAppTemplate[] = [];
       
-      console.log('Email templates:', emailTemplates);
-      console.log('WhatsApp templates:', whatsappTemplates);
+      try {
+        console.log('Trying to fetch email templates...');
+        const emailResponse = await fastApiClient.templates.getAll('email');
+        emailTemplates = Array.isArray(emailResponse) ? emailResponse : [];
+        console.log('Email templates fetched:', emailTemplates);
+      } catch (emailError) {
+        console.warn('Failed to fetch email templates, using fallbacks:', emailError);
+        emailTemplates = FALLBACK_EMAIL_TEMPLATES;
+      }
+      
+      try {
+        console.log('Trying to fetch WhatsApp templates...');
+        const whatsappResponse = await fastApiClient.templates.getAll('whatsapp');
+        whatsappTemplates = Array.isArray(whatsappResponse) ? whatsappResponse : [];
+        console.log('WhatsApp templates fetched:', whatsappTemplates);
+      } catch (whatsappError) {
+        console.warn('Failed to fetch WhatsApp templates, using fallbacks:', whatsappError);
+        whatsappTemplates = FALLBACK_WHATSAPP_TEMPLATES;
+      }
+      
+      // If both API calls failed but we got fallbacks, set a warning message
+      if (emailTemplates === FALLBACK_EMAIL_TEMPLATES && whatsappTemplates === FALLBACK_WHATSAPP_TEMPLATES) {
+        setError('Using demo templates. Backend may not be running or authenticated.');
+      }
 
-      setEmailTemplates(emailTemplates || []);
-      setWhatsappTemplates(whatsappTemplates || []);
+      setEmailTemplates(emailTemplates);
+      setWhatsappTemplates(whatsappTemplates);
+      
     } catch (error) {
-      console.error('Error fetching templates:', error);
-      setError('Failed to load templates. Please try again.');
-      // Set empty arrays on error
-      setEmailTemplates([]);
-      setWhatsappTemplates([]);
+      console.error('Error in fetchTemplates:', error);
+      setError('Failed to load templates from server. Using demo templates.');
+      // Set fallback templates on any error
+      setEmailTemplates(FALLBACK_EMAIL_TEMPLATES);
+      setWhatsappTemplates(FALLBACK_WHATSAPP_TEMPLATES);
     } finally {
       setLoading(false);
     }
   };
 
   const handleNext = () => {
-    onNext();
+    try {
+      onNext();
+    } catch (error) {
+      console.error('Error in handleNext:', error);
+      setError('Failed to proceed to next step. Please try again.');
+    }
   };
+
+  // Add error boundary protection
+  if (error && !loading) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="text-amber-600 mb-4">{error}</div>
+          <div className="space-x-2">
+            <Button onClick={fetchTemplates} variant="outline">
+              Retry Loading Templates
+            </Button>
+            <Button onClick={onPrev} variant="outline">
+              Go Back
+            </Button>
+            {(emailTemplates.length > 0 || whatsappTemplates.length > 0) && (
+              <Button onClick={handleNext}>
+                Continue Anyway
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
       <Card>
         <CardContent className="p-8">
-          <div className="text-center">Loading templates...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            Loading templates...
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (error) {
+  try {
     return (
       <Card>
-        <CardContent className="p-6 text-center">
-          <div className="text-red-600 mb-4">{error}</div>
-          <Button onClick={fetchTemplates} variant="outline">
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Choose Communication Templates</CardTitle>
-        <CardDescription>
-          Select email and WhatsApp templates for your campaign
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-8">
+        <CardHeader>
+          <CardTitle>Choose Communication Templates</CardTitle>
+          <CardDescription>
+            Select email and WhatsApp templates for your campaign
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-8">
           {/* Email Templates */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -138,7 +213,10 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
             ) : (
               <RadioGroup
                 value={data.emailTemplateId || ''}
-                onValueChange={(value) => onUpdate({ emailTemplateId: value })}
+                onValueChange={(value) => {
+                  console.log('Email template selected:', value);
+                  onUpdate({ emailTemplateId: value });
+                }}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {emailTemplates.map((template) => (
@@ -158,7 +236,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
                         </div>
                         <p className="text-sm font-medium">{template.subject}</p>
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {template.content.substring(0, 100)}...
+                          {template.body.substring(0, 100)}...
                         </p>
                         {template.variables && template.variables.length > 0 && (
                           <div className="flex flex-wrap gap-1">
@@ -207,7 +285,10 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
             ) : (
               <RadioGroup
                 value={data.whatsappTemplateId || ''}
-                onValueChange={(value) => onUpdate({ whatsappTemplateId: value })}
+                onValueChange={(value) => {
+                  console.log('WhatsApp template selected:', value);
+                  onUpdate({ whatsappTemplateId: value });
+                }}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {whatsappTemplates.map((template) => (
@@ -260,4 +341,24 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
       </CardContent>
     </Card>
   );
+  } catch (renderError) {
+    console.error('Error rendering TemplateSelection:', renderError);
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="text-red-600 mb-4">
+            Something went wrong loading the template selection. Please try again.
+          </div>
+          <div className="space-x-2">
+            <Button onClick={onPrev} variant="outline">
+              Go Back
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Refresh Page
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 }

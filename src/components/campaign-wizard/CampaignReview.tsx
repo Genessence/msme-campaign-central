@@ -38,7 +38,7 @@ interface EmailTemplate {
   id: string;
   name: string;
   subject: string;
-  content: string;
+  body: string; // Changed from content to body to match backend
   created_at?: string;
   updated_at?: string;
 }
@@ -114,26 +114,74 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
   };
 
   const fetchEmailTemplate = async () => {
-    if (!data.emailTemplateId) return;
+    if (!data.emailTemplateId) {
+      console.log('No email template ID provided');
+      return;
+    }
     
     try {
+      console.log('Fetching email template with ID:', data.emailTemplateId);
+      
+      // Check if this is a fallback template ID
+      if (data.emailTemplateId.startsWith('email-fallback-')) {
+        console.log('Using fallback email template');
+        const fallbackTemplate: EmailTemplate = {
+          id: data.emailTemplateId,
+          name: 'Demo Email Template',
+          subject: 'MSME Status Update Required',
+          body: 'Dear {vendor_name}, Please update your MSME status information. Best regards, Amber Compliance Team'
+        };
+        setEmailTemplate(fallbackTemplate);
+        return;
+      }
+      
       const template = await fastApiClient.templates.getById(data.emailTemplateId);
-      console.log('Email template fetched:', template?.name);
+      console.log('Email template fetched:', template);
       setEmailTemplate(template);
     } catch (error) {
       console.error('Error fetching email template:', error);
+      // Fallback to a default display
+      setEmailTemplate({
+        id: data.emailTemplateId,
+        name: 'Template (ID: ' + data.emailTemplateId.substring(0, 8) + '...)',
+        subject: 'Email Template',
+        body: 'Template content not available'
+      });
     }
   };
 
   const fetchWhatsAppTemplate = async () => {
-    if (!data.whatsappTemplateId) return;
+    if (!data.whatsappTemplateId) {
+      console.log('No WhatsApp template ID provided');
+      return;
+    }
     
     try {
+      console.log('Fetching WhatsApp template with ID:', data.whatsappTemplateId);
+      
+      // Check if this is a fallback template ID
+      if (data.whatsappTemplateId.startsWith('whatsapp-fallback-')) {
+        console.log('Using fallback WhatsApp template');
+        const fallbackTemplate: WhatsAppTemplate = {
+          id: data.whatsappTemplateId,
+          name: 'Demo WhatsApp Template',
+          content: 'Hi {vendor_name}, please update your MSME status via our portal. Thank you!'
+        };
+        setWhatsappTemplate(fallbackTemplate);
+        return;
+      }
+      
       const template = await fastApiClient.templates.getById(data.whatsappTemplateId);
-      console.log('WhatsApp template fetched:', template?.name);
+      console.log('WhatsApp template fetched:', template);
       setWhatsappTemplate(template);
     } catch (error) {
       console.error('Error fetching WhatsApp template:', error);
+      // Fallback to a default display
+      setWhatsappTemplate({
+        id: data.whatsappTemplateId,
+        name: 'Template (ID: ' + data.whatsappTemplateId.substring(0, 8) + '...)',
+        content: 'Template content not available'
+      });
     }
   };
 
@@ -282,7 +330,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
                       <p className="font-medium">{emailTemplate.name}</p>
                       <p className="text-sm text-muted-foreground">{emailTemplate.subject}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2">
-                        {emailTemplate.content.substring(0, 80)}...
+                        {emailTemplate.body.substring(0, 80)}...
                       </p>
                     </div>
                   ) : (

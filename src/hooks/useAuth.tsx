@@ -56,7 +56,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       return { error: null };
     } catch (error) {
-      return { error: { message: error instanceof Error ? error.message : 'Login failed' } };
+      console.error('Authentication error:', error);
+      let errorMessage = 'Login failed';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Unable to connect') || error.message.includes('Backend server')) {
+          errorMessage = 'Cannot connect to server. Please ensure the backend is running on http://127.0.0.1:8001';
+        } else if (error.message.includes('Incorrect email or password')) {
+          errorMessage = 'Invalid email or password';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      return { error: { message: errorMessage } };
     } finally {
       setLoading(false);
     }
