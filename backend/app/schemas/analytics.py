@@ -81,12 +81,12 @@ class AnalyticsResponse(BaseModel):
 
 # Report Generation Schemas
 class ReportRequest(BaseModel):
-    report_type: str = Field(..., regex=r'^(campaign|vendor|compliance|performance)$')
+    report_type: str = Field(..., pattern=r'^(campaign|vendor|compliance|performance)$')
     campaign_ids: Optional[List[UUID]] = None
     vendor_ids: Optional[List[UUID]] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    format: str = Field('pdf', regex=r'^(pdf|excel|csv)$')
+    format: str = Field('pdf', pattern=r'^(pdf|excel|csv)$')
     include_charts: bool = True
 
 

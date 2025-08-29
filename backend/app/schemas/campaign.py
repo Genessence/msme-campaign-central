@@ -151,7 +151,7 @@ class WhatsAppTemplateResponse(WhatsAppTemplateBase):
 class CustomFormBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     title: str = Field(..., min_length=1, max_length=255)
-    slug: str = Field(..., min_length=1, max_length=100, regex=r'^[a-z0-9-]+$')
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r'^[a-z0-9-]+$')
     description: Optional[str] = None
     settings: Optional[Dict[str, Any]] = None
     is_active: bool = True
@@ -208,7 +208,7 @@ class MSMEResponseResponse(MSMEResponseBase):
 
 # Template Preview Schema
 class TemplatePreviewRequest(BaseModel):
-    template_type: str = Field(..., regex=r'^(email|whatsapp)$')
+    template_type: str = Field(..., pattern=r'^(email|whatsapp)$')
     template_content: str
     variables: Optional[Dict[str, str]] = None
     vendor_id: Optional[UUID] = None  # For real vendor data substitution

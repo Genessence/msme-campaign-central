@@ -28,9 +28,6 @@ structlog.configure(
 
 logger = structlog.get_logger()
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="MSME Campaign Central API",
     description="Backend API for MSME Campaign Management System",
@@ -69,11 +66,35 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "msme-backend"}
+    try:
+        # Test database connection
+        from app.database import engine
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+        return {
+            "status": "healthy", 
+            "service": "msme-backend",
+            "database": "connected"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy", 
+            "service": "msme-backend",
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("MSME Campaign Central API starting up")
+    
+    # Try to create database tables on startup
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
+        logger.warning("API will start but database operations will fail until database is properly configured")
 
 @app.on_event("shutdown")
 async def shutdown_event():
