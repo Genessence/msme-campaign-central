@@ -1,0 +1,346 @@
+import os
+import shutil
+import uuid
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+import aiofiles
+from fastapi import UploadFile, HTTPException
+import magic
+import pandas as pd
+from PIL import Image
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class FileUploadService:
+    def __init__(self):
+        self.upload_dir = Path(os.getenv("UPLOAD_PATH", "uploads"))
+        self.max_file_size = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
+        self.allowed_extensions = {
+            'images': ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'],
+            'documents': ['.pdf', '.doc', '.docx', '.txt', '.rtf'],
+            'spreadsheets': ['.xlsx', '.xls', '.csv'],
+            'archives': ['.zip', '.rar', '.7z']
+        }
+        self.allowed_mime_types = {
+            'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+            'application/pdf', 'application/msword', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain', 'text/csv',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/zip', 'application/x-rar-compressed'
+        }
+        
+        # Create upload directories
+        self._create_directories()
+
+    def _create_directories(self):
+        """Create necessary upload directories"""
+        directories = [
+            self.upload_dir,
+            self.upload_dir / "images",
+            self.upload_dir / "documents", 
+            self.upload_dir / "spreadsheets",
+            self.upload_dir / "temp",
+            self.upload_dir / "thumbnails"
+        ]
+        
+        for directory in directories:
+            directory.mkdir(parents=True, exist_ok=True)
+
+    async def upload_file(
+        self,
+        file: UploadFile,
+        category: str = "documents",
+        user_id: Optional[str] = None,
+        create_thumbnail: bool = False
+    ) -> Dict[str, Any]:
+        """Upload and process a file"""
+        try:
+            # Validate file
+            validation_result = await self._validate_file(file)
+            if not validation_result['valid']:
+                raise HTTPException(status_code=400, detail=validation_result['error'])
+
+            # Generate unique filename
+            file_extension = Path(file.filename).suffix.lower()
+            unique_filename = f"{uuid.uuid4()}{file_extension}"
+            
+            # Determine upload path
+            category_dir = self.upload_dir / category
+            file_path = category_dir / unique_filename
+
+            # Save file
+            await self._save_file(file, file_path)
+
+            # Get file info
+            file_info = {
+                'id': str(uuid.uuid4()),
+                'filename': file.filename,
+                'stored_filename': unique_filename,
+                'file_path': str(file_path),
+                'file_size': file_path.stat().st_size,
+                'mime_type': validation_result['mime_type'],
+                'category': category,
+                'user_id': user_id,
+                'upload_url': f"/uploads/{category}/{unique_filename}"
+            }
+
+            # Create thumbnail for images
+            if create_thumbnail and category == 'images':
+                thumbnail_path = await self._create_thumbnail(file_path, unique_filename)
+                if thumbnail_path:
+                    file_info['thumbnail_url'] = f"/uploads/thumbnails/{Path(thumbnail_path).name}"
+
+            # Process spreadsheet data
+            if category == 'spreadsheets' and file_extension in ['.csv', '.xlsx', '.xls']:
+                spreadsheet_info = await self._process_spreadsheet(file_path)
+                file_info.update(spreadsheet_info)
+
+            logger.info(f"File uploaded successfully: {file.filename} -> {unique_filename}")
+            return file_info
+
+        except Exception as e:
+            logger.error(f"File upload failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+    async def _validate_file(self, file: UploadFile) -> Dict[str, Any]:
+        """Validate uploaded file"""
+        try:
+            # Check file size
+            if hasattr(file, 'size') and file.size > self.max_file_size:
+                return {
+                    'valid': False,
+                    'error': f"File size exceeds maximum limit of {self.max_file_size / 1024 / 1024:.1f}MB"
+                }
+
+            # Check file extension
+            file_extension = Path(file.filename).suffix.lower()
+            all_extensions = []
+            for ext_list in self.allowed_extensions.values():
+                all_extensions.extend(ext_list)
+            
+            if file_extension not in all_extensions:
+                return {
+                    'valid': False,
+                    'error': f"File type {file_extension} not allowed"
+                }
+
+            # Read file header for MIME type detection
+            file_content = await file.read(1024)  # Read first 1KB
+            await file.seek(0)  # Reset file pointer
+
+            # Detect MIME type
+            try:
+                mime_type = magic.from_buffer(file_content, mime=True)
+            except:
+                # Fallback to guessing from extension
+                mime_map = {
+                    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                    '.png': 'image/png', '.gif': 'image/gif',
+                    '.pdf': 'application/pdf', '.txt': 'text/plain',
+                    '.csv': 'text/csv', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+                mime_type = mime_map.get(file_extension, 'application/octet-stream')
+
+            # Check MIME type
+            if mime_type not in self.allowed_mime_types:
+                return {
+                    'valid': False,
+                    'error': f"MIME type {mime_type} not allowed"
+                }
+
+            return {
+                'valid': True,
+                'mime_type': mime_type
+            }
+
+        except Exception as e:
+            return {
+                'valid': False,
+                'error': f"File validation failed: {str(e)}"
+            }
+
+    async def _save_file(self, file: UploadFile, file_path: Path):
+        """Save uploaded file to disk"""
+        async with aiofiles.open(file_path, 'wb') as f:
+            while content := await file.read(8192):  # Read in 8KB chunks
+                await f.write(content)
+
+    async def _create_thumbnail(self, image_path: Path, filename: str) -> Optional[str]:
+        """Create thumbnail for image file"""
+        try:
+            thumbnail_filename = f"thumb_{filename}"
+            thumbnail_path = self.upload_dir / "thumbnails" / thumbnail_filename
+
+            # Open and resize image
+            with Image.open(image_path) as img:
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Create thumbnail
+                img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                img.save(thumbnail_path, 'JPEG', quality=85)
+
+            return str(thumbnail_path)
+
+        except Exception as e:
+            logger.error(f"Thumbnail creation failed: {str(e)}")
+            return None
+
+    async def _process_spreadsheet(self, file_path: Path) -> Dict[str, Any]:
+        """Process spreadsheet file and extract metadata"""
+        try:
+            file_extension = file_path.suffix.lower()
+            
+            if file_extension == '.csv':
+                df = pd.read_csv(file_path)
+            elif file_extension in ['.xlsx', '.xls']:
+                df = pd.read_excel(file_path)
+            else:
+                return {}
+
+            return {
+                'spreadsheet_info': {
+                    'rows': len(df),
+                    'columns': len(df.columns),
+                    'column_names': df.columns.tolist(),
+                    'preview': df.head(5).to_dict('records') if len(df) > 0 else []
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Spreadsheet processing failed: {str(e)}")
+            return {'spreadsheet_error': str(e)}
+
+    async def upload_multiple_files(
+        self,
+        files: List[UploadFile],
+        category: str = "documents",
+        user_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Upload multiple files"""
+        results = []
+        
+        for file in files:
+            try:
+                result = await self.upload_file(file, category, user_id)
+                results.append(result)
+            except Exception as e:
+                results.append({
+                    'filename': file.filename,
+                    'error': str(e),
+                    'success': False
+                })
+
+        return results
+
+    def delete_file(self, file_path: str) -> bool:
+        """Delete uploaded file"""
+        try:
+            full_path = Path(file_path)
+            if full_path.exists() and self.upload_dir in full_path.parents:
+                full_path.unlink()
+                
+                # Delete thumbnail if exists
+                if 'images' in str(full_path):
+                    thumbnail_path = self.upload_dir / "thumbnails" / f"thumb_{full_path.name}"
+                    if thumbnail_path.exists():
+                        thumbnail_path.unlink()
+                
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"File deletion failed: {str(e)}")
+            return False
+
+    def get_file_info(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """Get information about uploaded file"""
+        try:
+            full_path = Path(file_path)
+            if not full_path.exists():
+                return None
+
+            stat = full_path.stat()
+            
+            return {
+                'filename': full_path.name,
+                'file_size': stat.st_size,
+                'created_at': stat.st_ctime,
+                'modified_at': stat.st_mtime,
+                'file_path': str(full_path)
+            }
+        except Exception:
+            return None
+
+    def cleanup_temp_files(self, max_age_hours: int = 24):
+        """Clean up temporary files older than specified age"""
+        try:
+            temp_dir = self.upload_dir / "temp"
+            current_time = pd.Timestamp.now()
+            
+            for file_path in temp_dir.iterdir():
+                if file_path.is_file():
+                    file_age = current_time - pd.Timestamp.fromtimestamp(file_path.stat().st_mtime)
+                    if file_age.total_seconds() > (max_age_hours * 3600):
+                        file_path.unlink()
+                        logger.info(f"Cleaned up temp file: {file_path.name}")
+        except Exception as e:
+            logger.error(f"Temp file cleanup failed: {str(e)}")
+
+    async def import_vendor_csv(self, file_path: Path) -> Dict[str, Any]:
+        """Import vendors from CSV file"""
+        try:
+            df = pd.read_csv(file_path)
+            
+            # Expected columns for vendor import
+            required_columns = ['name', 'email', 'company_name']
+            optional_columns = [
+                'phone', 'whatsapp', 'address', 'city', 'state', 'pincode',
+                'industry_type', 'business_type', 'business_size', 
+                'registration_number', 'gst_number'
+            ]
+            
+            # Validate required columns
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'success': False,
+                    'error': f"Missing required columns: {', '.join(missing_columns)}",
+                    'available_columns': df.columns.tolist()
+                }
+            
+            # Process and validate data
+            vendors_data = []
+            errors = []
+            
+            for index, row in df.iterrows():
+                try:
+                    vendor_data = {col: row.get(col, '') for col in required_columns + optional_columns}
+                    
+                    # Basic validation
+                    if not vendor_data['email'] or '@' not in vendor_data['email']:
+                        errors.append(f"Row {index + 2}: Invalid email")
+                        continue
+                    
+                    vendors_data.append(vendor_data)
+                
+                except Exception as e:
+                    errors.append(f"Row {index + 2}: {str(e)}")
+            
+            return {
+                'success': True,
+                'vendors_data': vendors_data,
+                'total_rows': len(df),
+                'valid_rows': len(vendors_data),
+                'errors': errors
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"CSV processing failed: {str(e)}"
+            }
