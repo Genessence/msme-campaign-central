@@ -1,34 +1,5 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Python Backend Specific Ignores
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Python Backend
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -84,18 +55,9 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff (if used in future):
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff (if used in future):
+# FastAPI specific
 instance/
 .webassets-cache
-
-# Scrapy stuff (if used in future):
-.scrapy
 
 # Sphinx documentation
 docs/_build/
@@ -116,7 +78,7 @@ ipython_config.py
 # pipenv
 Pipfile.lock
 
-# PEP 582
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 
 # Celery stuff
@@ -126,7 +88,7 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# Virtual environments
 .env
 .venv
 env/
@@ -153,26 +115,65 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Backend specific
-backend/.env
-backend/venv/
-backend/__pycache__/
-backend/uploads/
-backend/logs/
-backend/*.db
-backend/instance/
-backend/migrations/versions/*.py
-!backend/migrations/versions/__init__.py
+# Local development files
+.env.local
+.env.development
+.env.production
 
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 postgres_data/
 
-# FastAPI
-.pytest_cache/
+# Upload directories
+uploads/
+temp_uploads/
+static/uploads/
+
+# Log files
+logs/
+*.log
+
+# Test coverage
 htmlcov/
+.coverage
+coverage.xml
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Alembic
 alembic.ini.local
+
+# Development cache
+.pytest_cache/
+.mypy_cache/
+
+# Security files
+*.pem
+*.key
+*.crt
+*.p12
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Local configuration overrides
+config_local.py
+settings_local.py
