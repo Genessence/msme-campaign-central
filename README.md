@@ -1,73 +1,158 @@
-# Welcome to your Lovable project
+<div align="center">
+	<h1>MSME Campaign Central</h1>
+	<p><strong>Amber Compliance System</strong> – Manage MSME vendor data, run communication / data collection campaigns, track responses & compliance metrics.</p>
+</div>
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/d7c2dae1-a3b1-491f-bacd-972de8ec840f
+MSME Campaign Central is a React + Supabase powered dashboard for:
 
-## How can I edit this code?
+- Creating & managing MSME status update / compliance campaigns
+- Distributing email / WhatsApp templates (via Supabase Edge Functions)
+- Collecting vendor responses & uploaded documents
+- Tracking progress with real‑time metrics & activity feed
+- Auditing problematic vendor data via upload validation logs
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+| Area | Technology |
+|------|------------|
+| Frontend | React 18, TypeScript, Vite |
+| UI | shadcn-ui, Radix Primitives, Tailwind CSS |
+| State / Data Fetching | React Query (@tanstack/react-query) |
+| Forms & Validation | react-hook-form, zod |
+| Backend (BaaS) | Supabase (Postgres, Auth, Edge Functions) |
+| Auth | Supabase email/password (persisted sessions) |
+| Charts | Recharts |
+| File Handling | Supabase Storage (implied) / custom tables |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d7c2dae1-a3b1-491f-bacd-972de8ec840f) and start prompting.
+## Quick Start
 
-Changes made via Lovable will be committed automatically to this repo.
+Prerequisites: Node.js 18+, npm or bun, Supabase project (or use public fallback keys for read-only demo).
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone <REPO_URL>
+cd msme-campaign-central
+cp .env.example .env   # Add your Supabase project values
+npm install            # or bun install / pnpm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will start on the port Vite assigns (usually http://localhost:5173).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Environment Variables
 
-**Use GitHub Codespaces**
+All client-exposed vars are prefixed with `VITE_`:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+VITE_SUPABASE_URL= https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY= <public-anon-key>
+```
 
-## What technologies are used for this project?
+The code currently includes fallback values (for continuity). Define your own values in `.env` to override. Remove fallbacks before production hand‑off.
 
-This project is built with:
+## Project Structure (selected)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+	pages/                 # Route-level components (Dashboard, Campaigns, Vendors, Templates, etc.)
+	components/            # Reusable UI + domain widgets (sidebar, submissions table)
+	hooks/                 # Custom hooks: auth, metrics, upload logs
+	integrations/supabase/ # Generated types + client wrapper
+	assets/                # Static images
+supabase/
+	functions/             # Edge Functions (execute-campaign, sending logic)
+	migrations/            # SQL migrations defining schema
+```
 
-## How can I deploy this project?
+## Key Domain Tables
 
-Simply open [Lovable](https://lovable.dev/projects/d7c2dae1-a3b1-491f-bacd-972de8ec840f) and click on Share -> Publish.
+| Table | Purpose |
+|-------|---------|
+| vendors | Master vendor registry + MSME attributes |
+| msme_campaigns | Campaign definitions (links to templates / forms) |
+| msme_responses | High-level tracking of vendor response status |
+| custom_forms / form_fields / form_responses | Dynamic form builder + submissions |
+| email_templates / whatsapp_templates | Communication content with variable placeholders |
+| campaign_email_sends | Audit of outbound email sends |
+| document_uploads | Uploaded vendor documents per campaign |
+| upload_logs | Validation errors from bulk vendor uploads |
+| profiles | User profile metadata (roles, names) |
 
-## Can I connect a custom domain to my Lovable project?
+Enum highlights: `campaign_status (Draft|Active|Completed|Cancelled)`, `response_status (Pending|Completed|Partial|Failed)`, `msme_category`, `msme_status`.
 
-Yes, you can!
+## Auth Flow
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+`useAuth` sets up a Supabase listener (`supabase.auth.onAuthStateChange`) and persists sessions via localStorage. Protected routes wrap pages and redirect unauthenticated users to `/auth`.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Metrics & Dashboard
+
+`useDashboardMetrics` aggregates counts (vendors, active campaigns, MSME vendors, pending responses) plus a merged recent activity feed from campaigns, vendors, and responses, refreshing every 30s.
+
+## Upload Validation
+
+Bulk vendor uploads create entries in `upload_logs` for invalid emails / phones. The Dashboard exposes a clear logs action (mutation + toast feedback).
+
+## Supabase Client
+
+`src/integrations/supabase/client.ts` now reads from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` with a console warning when fallbacks are used. Types are generated in `types.ts` enabling end‑to‑end type safety.
+
+## Edge Functions (supabase/functions)
+
+Contains server-side logic (e.g., `execute-campaign`, `send-campaign-email`, `send-campaign-whatsapp`). Deploy via the Supabase CLI:
+
+```bash
+supabase functions deploy execute-campaign
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Production build |
+| `npm run build:dev` | Development-mode build (with dev optimizations) |
+| `npm run preview` | Preview built app |
+| `npm run lint` | Run ESLint |
+
+## Development Workflow
+
+1. Create / update tables via SQL migrations (`supabase/migrations`).
+2. Generate updated TypeScript types (if using Supabase codegen) – not currently scripted; add a script if desired.
+3. Build features in `pages` + domain hooks.
+4. Keep forms & templates generic; use variables for substitution in campaign execution.
+5. Add tests (future enhancement – none present yet).
+
+## Suggested Next Enhancements
+
+- Add unit/integration tests (React Testing Library + Vitest)
+- Add role-based authorization guard in `useAuth`
+- Implement soft deletion / archival for campaigns
+- Add activity feed table instead of dynamic composition
+- CLI script to regenerate Supabase types
+
+## Deployment
+
+You can still manage via Lovable UI if desired. For manual deploys:
+
+1. Ensure `.env` is populated in the hosting environment.
+2. Run `npm run build`.
+3. Serve `dist/` via static hosting (Netlify, Vercel, Cloudflare Pages, etc.).
+4. Deploy/upgrade Supabase Edge Functions as needed.
+
+## Security Notes
+
+- Never expose `service_role` keys to the client.
+- Consider enabling RLS (Row Level Security) and writing policies (not shown in this repo snapshot).
+- Remove fallback anon key before production if repository becomes public.
+
+## Contributing
+
+Open a PR with a clear description. Keep changes scoped and run `npm run lint` before submission.
+
+## License
+
+Internal project (add license text if this will be distributed externally).
+
+---
+Maintained by the Amber / Genessence team.
