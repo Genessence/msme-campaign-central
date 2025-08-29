@@ -123,8 +123,8 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
       console.log('Fetching email template with ID:', data.emailTemplateId);
       
       // Check if this is a fallback template ID
-      if (data.emailTemplateId.startsWith('email-fallback-')) {
-        console.log('Using fallback email template');
+      if (data.emailTemplateId.startsWith('email-fallback-') || data.emailTemplateId.startsWith('test-email-')) {
+        console.log('Using fallback/test email template');
         const fallbackTemplate: EmailTemplate = {
           id: data.emailTemplateId,
           name: 'Demo Email Template',
@@ -160,7 +160,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
       console.log('Fetching WhatsApp template with ID:', data.whatsappTemplateId);
       
       // Check if this is a fallback template ID
-      if (data.whatsappTemplateId.startsWith('whatsapp-fallback-')) {
+      if (data.whatsappTemplateId.startsWith('whatsapp-fallback-') || data.whatsappTemplateId.startsWith('test-whatsapp-')) {
         console.log('Using fallback WhatsApp template');
         const fallbackTemplate: WhatsAppTemplate = {
           id: data.whatsappTemplateId,

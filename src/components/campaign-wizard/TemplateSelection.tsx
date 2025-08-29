@@ -37,7 +37,7 @@ interface WhatsAppTemplate {
 // Fallback templates in case API is not available
 const FALLBACK_EMAIL_TEMPLATES: EmailTemplate[] = [
   {
-    id: 'email-fallback-1',
+    id: 'test-email-template-1',
     name: 'Basic MSME Status Update',
     subject: 'MSME Status Update Required',
     body: 'Dear {vendor_name}, Please update your MSME status information. Best regards, Amber Compliance Team',
@@ -54,7 +54,7 @@ const FALLBACK_EMAIL_TEMPLATES: EmailTemplate[] = [
 
 const FALLBACK_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
   {
-    id: 'whatsapp-fallback-1',
+    id: 'test-whatsapp-template-1',
     name: 'MSME Status WhatsApp',
     content: 'Hi {vendor_name}, please update your MSME status via our portal. Thank you!',
     variables: ['vendor_name']

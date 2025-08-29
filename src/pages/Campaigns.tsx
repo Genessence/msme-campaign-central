@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,6 +48,7 @@ const getStatusColor = (status: string) => {
 
 export default function Campaigns() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +62,30 @@ export default function Campaigns() {
     } else {
       setLoading(false);
     }
+  }, [isAuthenticated]);
+
+  // Refresh campaigns when navigating to this page
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/campaigns') {
+      console.log('Navigated to campaigns page, refreshing...');
+      fetchCampaigns();
+    }
+  }, [location.pathname, isAuthenticated]);
+
+  // Refresh campaigns when component mounts or when navigating back to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        console.log('Page became visible, refreshing campaigns...');
+        fetchCampaigns();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isAuthenticated]);
 
   const fetchCampaigns = async () => {
@@ -155,10 +180,22 @@ export default function Campaigns() {
             Manage your MSME status update campaigns
           </p>
         </div>
-        <Button className="gap-2" onClick={() => navigate('/campaigns/create')}>
-          <Plus className="h-4 w-4" />
-          Create Campaign
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            onClick={() => {
+              console.log('Manual refresh triggered');
+              fetchCampaigns();
+            }}
+          >
+            Refresh
+          </Button>
+          <Button className="gap-2" onClick={() => navigate('/campaigns/create')}>
+            <Plus className="h-4 w-4" />
+            Create Campaign
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

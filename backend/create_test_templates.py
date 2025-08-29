@@ -20,7 +20,7 @@ def create_test_templates():
         if not existing_email:
             print("Creating test email template...")
             email_template = EmailTemplate(
-                id=str(uuid.uuid4()),
+                id="test-email-template-1",
                 name="Basic MSME Status Update",
                 subject="MSME Status Update Required",
                 body="Dear {{vendor_name}},\n\nPlease update your MSME status information.\n\nBest regards,\nAmber Compliance Team"
@@ -31,7 +31,7 @@ def create_test_templates():
         if not existing_whatsapp:
             print("Creating test WhatsApp template...")
             whatsapp_template = WhatsAppTemplate(
-                id=str(uuid.uuid4()),
+                id="test-whatsapp-template-1",
                 name="MSME Status WhatsApp",
                 content="Hi {{vendor_name}}, please update your MSME status via our portal. Thank you!"
             )
