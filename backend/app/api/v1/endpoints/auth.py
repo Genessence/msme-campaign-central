@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token
+from app.api.deps import get_current_user
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
@@ -72,11 +73,9 @@ async def login(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+async def get_current_user_info(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get current user information"""
-    from app.api.deps import get_current_user
-    user = get_current_user(db, token)
-    return user
+    return current_user

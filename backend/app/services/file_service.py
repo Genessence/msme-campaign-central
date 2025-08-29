@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import aiofiles
 from fastapi import UploadFile, HTTPException
-import magic
+# import magic  # Commented out due to Windows compatibility issues
 import pandas as pd
-from PIL import Image
+# from PIL import Image  # Temporarily commented out
 import logging
 
 logger = logging.getLogger(__name__)
@@ -132,18 +132,14 @@ class FileUploadService:
             file_content = await file.read(1024)  # Read first 1KB
             await file.seek(0)  # Reset file pointer
 
-            # Detect MIME type
-            try:
-                mime_type = magic.from_buffer(file_content, mime=True)
-            except:
-                # Fallback to guessing from extension
-                mime_map = {
-                    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-                    '.png': 'image/png', '.gif': 'image/gif',
-                    '.pdf': 'application/pdf', '.txt': 'text/plain',
-                    '.csv': 'text/csv', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                }
-                mime_type = mime_map.get(file_extension, 'application/octet-stream')
+            # Detect MIME type from extension (fallback method)
+            mime_map = {
+                '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                '.png': 'image/png', '.gif': 'image/gif',
+                '.pdf': 'application/pdf', '.txt': 'text/plain',
+                '.csv': 'text/csv', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            }
+            mime_type = mime_map.get(file_extension, 'application/octet-stream')
 
             # Check MIME type
             if mime_type not in self.allowed_mime_types:
@@ -175,17 +171,17 @@ class FileUploadService:
             thumbnail_filename = f"thumb_{filename}"
             thumbnail_path = self.upload_dir / "thumbnails" / thumbnail_filename
 
-            # Open and resize image
-            with Image.open(image_path) as img:
-                # Convert to RGB if necessary
-                if img.mode in ('RGBA', 'P'):
-                    img = img.convert('RGB')
-                
-                # Create thumbnail
-                img.thumbnail((200, 200), Image.Resampling.LANCZOS)
-                img.save(thumbnail_path, 'JPEG', quality=85)
+            # Thumbnail generation temporarily disabled
+            # with Image.open(image_path) as img:
+            #     # Convert to RGB if necessary
+            #     if img.mode in ('RGBA', 'P'):
+            #         img = img.convert('RGB')
+            #     
+            #     # Create thumbnail
+            #     img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+            #     img.save(thumbnail_path, 'JPEG', quality=85)
 
-            return str(thumbnail_path)
+            return str(image_path)  # Return original path for now
 
         except Exception as e:
             logger.error(f"Thumbnail creation failed: {str(e)}")

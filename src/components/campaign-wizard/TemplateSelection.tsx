@@ -38,6 +38,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTemplates();
@@ -45,6 +46,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
 
   const fetchTemplates = async () => {
     try {
+      setError(null);
       console.log('Fetching templates from FastAPI...');
       
       // Fetch email and WhatsApp templates separately
@@ -60,6 +62,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
       setWhatsappTemplates(whatsappTemplates || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
+      setError('Failed to load templates. Please try again.');
       // Set empty arrays on error
       setEmailTemplates([]);
       setWhatsappTemplates([]);
@@ -77,6 +80,19 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
       <Card>
         <CardContent className="p-8">
           <div className="text-center">Loading templates...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="text-red-600 mb-4">{error}</div>
+          <Button onClick={fetchTemplates} variant="outline">
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );

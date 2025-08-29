@@ -23,6 +23,7 @@ export default function EditWhatsAppTemplate() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (id) {
@@ -32,19 +33,12 @@ export default function EditWhatsAppTemplate() {
 
   const fetchTemplate = async () => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_templates')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
+      const template = await fastApiClient.templates.getById(id!);
+      if (template) {
         setFormData({
-          name: data.name,
-          content: data.content,
-          variables: data.variables || [],
+          name: template.name,
+          content: template.content || '',
+          variables: template.variables || [],
         });
       }
     } catch (error) {
@@ -80,6 +74,15 @@ export default function EditWhatsAppTemplate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isAuthenticated) {
+      toast({
+        title: "Error",
+        description: "Please log in to update templates.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!formData.name.trim() || !formData.content.trim()) {
       toast({
         title: "Error",
@@ -92,16 +95,12 @@ export default function EditWhatsAppTemplate() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('whatsapp_templates')
-        .update({
-          name: formData.name.trim(),
-          content: formData.content.trim(),
-          variables: formData.variables,
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      await fastApiClient.templates.update(id!, {
+        name: formData.name.trim(),
+        content: formData.content.trim(),
+        variables: formData.variables,
+        template_type: 'whatsapp'
+      });
 
       toast({
         title: "Success",

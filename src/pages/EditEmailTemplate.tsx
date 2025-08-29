@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import '../components/ui/react-quill-custom.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { X, Plus } from 'lucide-react';
 import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,29 +24,24 @@ export default function EditEmailTemplate() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (id) {
+    if (id && isAuthenticated) {
       fetchTemplate();
     }
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const fetchTemplate = async () => {
     try {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const template = await fastApiClient.templates.getById(id!);
 
-      if (error) throw error;
-
-      if (data) {
+      if (template) {
         setFormData({
-          name: data.name,
-          subject: data.subject,
-          body: data.body,
-          variables: data.variables || [],
+          name: template.name,
+          subject: template.subject,
+          body: template.body,
+          variables: template.variables || [],
         });
       }
     } catch (error) {
@@ -63,60 +56,6 @@ export default function EditEmailTemplate() {
       setIsLoading(false);
     }
   };
-
-  const handleEditorChange = (content: string) => {
-    setFormData(prev => ({ ...prev, body: content }));
-  };
-
-  const insertVariable = (variable: string) => {
-    const quillEditor = document.querySelector('.ql-editor');
-    if (quillEditor) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const textNode = document.createTextNode(`{${variable}}`);
-        range.deleteContents();
-        range.insertNode(textNode);
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  };
-
-  const quillModules = {
-    toolbar: {
-      container: [
-        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-        [{ 'font': [] }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'script': 'sub'}, { 'script': 'super' }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'indent': '-1'}, { 'indent': '+1' }],
-        [{ 'align': [] }],
-        ['link', 'image'],
-        ['blockquote', 'code-block'],
-        ['clean']
-      ]
-    },
-    clipboard: {
-      matchVisual: false,
-    }
-  };
-
-  const quillFormats = [
-    'header', 'font', 'size',
-    'bold', 'italic', 'underline', 'strike',
-    'color', 'background',
-    'script',
-    'list', 'bullet', 'indent',
-    'align',
-    'link', 'image',
-    'blockquote', 'code-block'
-  ];
 
   const addVariable = () => {
     if (newVariable.trim() && !formData.variables.includes(newVariable.trim())) {
@@ -138,6 +77,15 @@ export default function EditEmailTemplate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isAuthenticated) {
+      toast({
+        title: "Error",
+        description: "Please log in to update templates.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!formData.name.trim() || !formData.subject.trim() || !formData.body.trim()) {
       toast({
         title: "Error",
@@ -150,17 +98,13 @@ export default function EditEmailTemplate() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('email_templates')
-        .update({
-          name: formData.name.trim(),
-          subject: formData.subject.trim(),
-          body: formData.body,
-          variables: formData.variables,
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      await fastApiClient.templates.update(id!, {
+        name: formData.name.trim(),
+        subject: formData.subject.trim(),
+        body: formData.body,
+        variables: formData.variables,
+        template_type: 'email'
+      });
 
       toast({
         title: "Success",
@@ -313,17 +257,15 @@ export default function EditEmailTemplate() {
             <div className="space-y-2">
               <Label>Email Body *</Label>
               <div className="border rounded-md overflow-hidden">
-                <ReactQuill
+                <Textarea
                   value={formData.body}
-                  onChange={handleEditorChange}
-                  modules={quillModules}
-                  formats={quillFormats}
+                  onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
                   placeholder="Enter your email content here..."
+                  className="min-h-[400px] border-none resize-none"
                   style={{ 
                     height: '400px',
                     backgroundColor: 'hsl(var(--background))',
                   }}
-                  theme="snow"
                 />
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
@@ -338,7 +280,22 @@ export default function EditEmailTemplate() {
                         variant="outline"
                         size="sm"
                         type="button"
-                        onClick={() => insertVariable(variable)}
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = textarea.value;
+                            const before = text.substring(0, start);
+                            const after = text.substring(end);
+                            const newText = before + `{${variable}}` + after;
+                            setFormData(prev => ({ ...prev, body: newText }));
+                            setTimeout(() => {
+                              textarea.focus();
+                              textarea.setSelectionRange(start + variable.length + 2, start + variable.length + 2);
+                            }, 0);
+                          }
+                        }}
                         className="text-xs h-6 px-2"
                       >
                         Insert {variable}
