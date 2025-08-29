@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import fastApiClient from '@/lib/fastapi-client';
 
 export interface UploadLog {
   id: string;
@@ -17,18 +17,14 @@ export const useUploadLogs = () => {
   return useQuery({
     queryKey: ['upload-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('upload_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
+      try {
+        // For now, return empty array since upload logs aren't implemented in FastAPI yet
+        // This can be implemented later when the backend supports upload logging
+        return [] as UploadLog[];
+      } catch (error) {
         console.error('Error fetching upload logs:', error);
-        throw error;
+        return [] as UploadLog[];
       }
-
-      return data as UploadLog[];
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -39,12 +35,11 @@ export const useClearUploadLogs = () => {
   
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('upload_logs')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
-      
-      if (error) {
+      try {
+        // For now, just simulate clearing logs
+        // This can be implemented later when the backend supports upload logging
+        return Promise.resolve();
+      } catch (error) {
         console.error('Error clearing upload logs:', error);
         throw error;
       }

@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/", response_model=List[VendorResponse])
 async def get_vendors(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=100000),  # Increased limit for campaign vendor selection
     search: Optional[str] = Query(None),
     msme_status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -25,6 +25,7 @@ async def get_vendors(
     
     if search:
         query = query.filter(
+            Vendor.company_name.icontains(search) |
             Vendor.vendor_name.icontains(search) |
             Vendor.vendor_code.icontains(search) |
             Vendor.email.icontains(search)

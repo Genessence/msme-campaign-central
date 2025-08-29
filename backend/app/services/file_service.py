@@ -292,42 +292,118 @@ class FileUploadService:
             logger.error(f"Temp file cleanup failed: {str(e)}")
 
     async def import_vendor_csv(self, file_path: Path) -> Dict[str, Any]:
-        """Import vendors from CSV file"""
+        """Import vendors from CSV file with comprehensive column mapping"""
         try:
             df = pd.read_csv(file_path)
             
-            # Expected columns for vendor import
-            required_columns = ['name', 'email', 'company_name']
-            optional_columns = [
-                'phone', 'whatsapp', 'address', 'city', 'state', 'pincode',
-                'industry_type', 'business_type', 'business_size', 
-                'registration_number', 'gst_number'
-            ]
+            # Column mapping from CSV to database fields
+            column_mapping = {
+                'company_name': 'company_name',
+                'vendor_code': 'vendor_code',
+                'contact_person_name': 'contact_person_name',
+                'email': 'email',
+                'phone_number': 'phone_number',
+                'registered_address': 'registered_address',
+                'country_origin': 'country_origin',
+                'supplier_type': 'supplier_type',
+                'supplier_category': 'supplier_category',
+                'annual_turnover': 'annual_turnover',
+                'year_established': 'year_established',
+                'msme_status': 'msme_status',
+                'pan_number': 'pan_number',
+                'gst_number': 'gst_number',
+                'gta_registration': 'gta_registration',
+                'incorporation_certificate_path': 'incorporation_certificate_path',
+                'currency': 'currency',
+                'nda': 'nda',
+                'sqa': 'sqa',
+                'four_m': 'four_m',
+                'code_of_conduct': 'code_of_conduct',
+                'compliance_agreement': 'compliance_agreement',
+                'self_declaration': 'self_declaration',
+                # Legacy mappings for backward compatibility
+                'name': 'company_name',
+                'phone': 'phone_number',
+                'vendor_name': 'company_name'
+            }
             
-            # Validate required columns
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            if missing_columns:
+            # Check for required columns (flexible approach)
+            required_fields = ['company_name', 'vendor_code', 'email']
+            csv_columns = df.columns.tolist()
+            
+            # Map CSV columns to our required fields
+            found_required = []
+            for field in required_fields:
+                # Check if field exists directly or through mapping
+                if field in csv_columns:
+                    found_required.append(field)
+                else:
+                    # Check reverse mapping
+                    for csv_col, db_field in column_mapping.items():
+                        if db_field == field and csv_col in csv_columns:
+                            found_required.append(field)
+                            break
+            
+            missing_required = [f for f in required_fields if f not in found_required]
+            if missing_required:
                 return {
                     'success': False,
-                    'error': f"Missing required columns: {', '.join(missing_columns)}",
-                    'available_columns': df.columns.tolist()
+                    'error': f'Missing required columns: {missing_required}',
+                    'available_columns': csv_columns,
+                    'required_columns': required_fields
                 }
             
-            # Process and validate data
             vendors_data = []
             errors = []
             
             for index, row in df.iterrows():
                 try:
-                    vendor_data = {col: row.get(col, '') for col in required_columns + optional_columns}
+                    vendor_data = {}
                     
-                    # Basic validation
-                    if not vendor_data['email'] or '@' not in vendor_data['email']:
-                        errors.append(f"Row {index + 2}: Invalid email")
+                    # Map CSV columns to database fields
+                    for csv_col, value in row.items():
+                        if pd.isna(value):
+                            continue
+                            
+                        db_field = column_mapping.get(csv_col, csv_col)
+                        
+                        # Handle boolean conversions
+                        if db_field in ['nda', 'sqa', 'four_m', 'code_of_conduct', 'compliance_agreement', 'self_declaration']:
+                            if isinstance(value, str):
+                                vendor_data[db_field] = value.lower() in ['true', '1', 'yes', 'y']
+                            else:
+                                vendor_data[db_field] = bool(value)
+                        
+                        # Handle numeric conversions
+                        elif db_field in ['annual_turnover', 'year_established']:
+                            try:
+                                if db_field == 'year_established':
+                                    vendor_data[db_field] = int(float(value))
+                                else:
+                                    vendor_data[db_field] = float(value)
+                            except (ValueError, TypeError):
+                                vendor_data[db_field] = None
+                        
+                        # Handle string fields
+                        else:
+                            vendor_data[db_field] = str(value).strip()
+                    
+                    # Ensure required fields are present
+                    if not vendor_data.get('company_name'):
+                        vendor_data['company_name'] = vendor_data.get('vendor_name', f"Vendor {vendor_data.get('vendor_code', index)}")
+                    
+                    # Set vendor_name for backward compatibility
+                    vendor_data['vendor_name'] = vendor_data['company_name']
+                    vendor_data['phone'] = vendor_data.get('phone_number', '')
+                    
+                    # Validate email format
+                    email = vendor_data.get('email', '').strip()
+                    if email and '@' not in email:
+                        errors.append(f"Row {index + 2}: Invalid email format '{email}'")
                         continue
                     
                     vendors_data.append(vendor_data)
-                
+                    
                 except Exception as e:
                     errors.append(f"Row {index + 2}: {str(e)}")
             
@@ -335,12 +411,14 @@ class FileUploadService:
                 'success': True,
                 'vendors_data': vendors_data,
                 'total_rows': len(df),
-                'valid_rows': len(vendors_data),
-                'errors': errors
+                'valid_vendors': len(vendors_data),
+                'errors': errors,
+                'columns_mapped': list(column_mapping.keys())
             }
             
         except Exception as e:
+            logger.error(f"CSV import failed: {str(e)}")
             return {
                 'success': False,
-                'error': f"CSV processing failed: {str(e)}"
+                'error': f'CSV processing failed: {str(e)}'
             }

@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -10,7 +11,6 @@ import { VendorSelection } from '@/components/campaign-wizard/VendorSelection';
 import { TemplateSelection } from '@/components/campaign-wizard/TemplateSelection';
 import { CampaignReview } from '@/components/campaign-wizard/CampaignReview';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -69,50 +69,42 @@ export default function CreateCampaign() {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase
-        .from('msme_campaigns')
-        .insert({
-          name: formData.name,
-          description: formData.description,
-          deadline: formData.deadline,
-          target_vendors: formData.selectedVendors,
-          email_template_id: formData.emailTemplateId,
-          whatsapp_template_id: formData.whatsappTemplateId,
-          status: isDraft ? 'Draft' : 'Active',
-          created_by: user?.id,
-        })
-        .select()
-        .single();
+      console.log('Creating campaign with data:', {
+        name: formData.name,
+        description: formData.description,
+        deadline: formData.deadline,
+        target_vendors: formData.selectedVendors,
+        email_template_id: formData.emailTemplateId,
+        whatsapp_template_id: formData.whatsappTemplateId,
+        selectedVendorsCount: formData.selectedVendors.length,
+      });
 
-      if (error) throw error;
+      // Create campaign via FastAPI
+      const campaignData = {
+        name: formData.name,
+        description: formData.description || null,
+        deadline: formData.deadline || null,
+        target_vendors: formData.selectedVendors,
+        email_template_id: formData.emailTemplateId || null,
+        whatsapp_template_id: formData.whatsappTemplateId || null,
+        communication_only: true, // Set to true if no templates selected
+      };
 
-      if (!isDraft && data) {
-        // Show launching state and redirect immediately
-        toast({
-          title: "Campaign Launching",
-          description: `Campaign "${formData.name}" is being launched! Emails are being processed in the background. Check campaign details for progress.`,
-        });
+      const createdCampaign = await fastApiClient.campaigns.create(campaignData);
+      console.log('Campaign created successfully:', createdCampaign);
 
-        // Start campaign execution in background (don't await)
-        supabase.functions.invoke('execute-campaign', {
-          body: { campaignId: data.id }
-        }).catch(error => {
-          console.error('Campaign execution error:', error);
-        });
-      } else {
-        toast({
-          title: "Campaign Saved",
-          description: `Campaign "${formData.name}" saved as draft successfully.`,
-        });
-      }
+      toast({
+        title: "Campaign Created",
+        description: `Campaign "${formData.name}" has been created successfully!`,
+      });
 
-      // Redirect immediately
+      // Navigate back to campaigns page
       navigate('/campaigns');
     } catch (error) {
       console.error('Campaign creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create campaign. Please try again.",
+        description: `Failed to create campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {

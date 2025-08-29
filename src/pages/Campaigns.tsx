@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,76 +49,53 @@ const getStatusColor = (status: string) => {
 export default function Campaigns() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCampaigns();
-  }, []);
+    if (isAuthenticated) {
+      fetchCampaigns();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const fetchCampaigns = async () => {
     try {
-      const { data: campaignsData, error: campaignsError } = await supabase
-        .from('msme_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false });
+      console.log('Fetching campaigns from FastAPI...');
+      console.log('Auth token:', localStorage.getItem('authToken') ? 'Present' : 'Missing');
+      
+      const campaignsResponse = await fastApiClient.campaigns.getAll();
+      console.log('Campaigns response:', campaignsResponse);
 
-      if (campaignsError) throw campaignsError;
+      // The FastAPI returns { campaigns: [...], total, page, size, pages }
+      const campaignsData = campaignsResponse.campaigns || [];
+      console.log('Campaigns data:', campaignsData);
 
-      const campaignsWithStats = await Promise.all(
-        (campaignsData || []).map(async (campaign) => {
-          const totalVendors = campaign.target_vendors?.length || 0;
-          
-          // Get email sending progress in batches to handle large datasets
-          let emailsSent = 0;
-          const batchSize = 1000;
-          let from = 0;
-          
-          while (true) {
-            const { data: emailBatch, error: emailError } = await supabase
-              .from('campaign_email_sends')
-              .select('vendor_id')
-              .eq('campaign_id', campaign.id)
-              .eq('status', 'sent')
-              .range(from, from + batchSize - 1);
-
-            if (emailError) {
-              console.error('Error fetching email sends batch:', emailError);
-              break;
-            }
-            
-            if (!emailBatch || emailBatch.length === 0) break;
-            
-            emailsSent += emailBatch.length;
-            
-            // If we got less than batchSize, we've reached the end
-            if (emailBatch.length < batchSize) break;
-            
-            from += batchSize;
-          }
-          console.log(`Campaign ${campaign.name}: Found ${emailsSent} emails sent`);
-
-          return {
-            id: campaign.id,
-            name: campaign.name,
-            description: campaign.description,
-            status: campaign.status || 'Draft',
-            totalVendors,
-            responded: emailsSent, // Now represents emails sent instead of responses
-            deadline: campaign.deadline,
-            created_at: campaign.created_at,
-          };
-        })
-      );
+      const campaignsWithStats = campaignsData.map((campaign: any) => {
+        const totalVendors = campaign.target_vendors?.length || 0;
+        
+        return {
+          id: campaign.id,
+          name: campaign.name,
+          description: campaign.description,
+          status: campaign.status || 'Draft',
+          totalVendors,
+          responded: 0, // TODO: Implement campaign analytics for sent emails
+          deadline: campaign.deadline,
+          created_at: campaign.created_at,
+        };
+      });
 
       setCampaigns(campaignsWithStats);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch campaigns. Please try again.",
+        description: `Failed to fetch campaigns: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -127,12 +105,7 @@ export default function Campaigns() {
 
   const handleEndCampaign = async (campaignId: string, campaignName: string) => {
     try {
-      const { error } = await supabase
-        .from('msme_campaigns')
-        .update({ status: 'Completed' })
-        .eq('id', campaignId);
-
-      if (error) throw error;
+      await fastApiClient.campaigns.update(campaignId, { status: 'Completed' });
 
       toast({
         title: "Campaign Ended",
@@ -156,6 +129,21 @@ export default function Campaigns() {
     const matchesStatus = statusFilter === 'all' || campaign.status.toLowerCase() === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Handle unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold">Authentication Required</h2>
+          <p className="text-muted-foreground mt-2">Please log in to view campaigns.</p>
+          <Button onClick={() => navigate('/auth')} className="mt-4">
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

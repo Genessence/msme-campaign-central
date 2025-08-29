@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EditEmailTemplate() {
   const { id } = useParams<{ id: string }>();

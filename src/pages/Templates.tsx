@@ -5,12 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, MessageCircle, Plus, Edit, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
-type EmailTemplate = Tables<'email_templates'>;
-type WhatsAppTemplate = Tables<'whatsapp_templates'>;
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  content: string;
+  variables?: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Templates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
@@ -18,23 +34,23 @@ export default function Templates() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    fetchTemplates();
-  }, []);
+    if (isAuthenticated) {
+      fetchTemplates();
+    }
+  }, [isAuthenticated]);
 
   const fetchTemplates = async () => {
     try {
       const [emailResult, whatsappResult] = await Promise.all([
-        supabase.from('email_templates').select('*').order('created_at', { ascending: false }),
-        supabase.from('whatsapp_templates').select('*').order('created_at', { ascending: false })
+        fastApiClient.templates.getAll('email'),
+        fastApiClient.templates.getAll('whatsapp')
       ]);
 
-      if (emailResult.error) throw emailResult.error;
-      if (whatsappResult.error) throw whatsappResult.error;
-
-      setEmailTemplates(emailResult.data || []);
-      setWhatsappTemplates(whatsappResult.data || []);
+      setEmailTemplates(emailResult || []);
+      setWhatsappTemplates(whatsappResult || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -50,13 +66,11 @@ export default function Templates() {
   const handleDeleteTemplate = async (type: 'email' | 'whatsapp', id: string) => {
     try {
       // Check if template is being used by any ACTIVE campaign
-      const { data: activeCampaigns, error: campaignError } = await supabase
-        .from('msme_campaigns')
-        .select('id, name')
-        .eq(type === 'email' ? 'email_template_id' : 'whatsapp_template_id', id)
-        .eq('status', 'Active');
-
-      if (campaignError) throw campaignError;
+      const campaigns = await fastApiClient.campaigns.getAll();
+      const activeCampaigns = campaigns.filter((campaign: any) => {
+        const templateField = type === 'email' ? 'email_template_id' : 'whatsapp_template_id';
+        return campaign[templateField] === id && campaign.status === 'Active';
+      });
 
       if (activeCampaigns && activeCampaigns.length > 0) {
         toast({
@@ -67,22 +81,8 @@ export default function Templates() {
         return;
       }
 
-      // Clear template references from completed campaigns
-      const templateField = type === 'email' ? 'email_template_id' : 'whatsapp_template_id';
-      const { error: updateError } = await supabase
-        .from('msme_campaigns')
-        .update({ [templateField]: null })
-        .eq(templateField, id)
-        .neq('status', 'Active');
-
-      if (updateError) throw updateError;
-
-      const { error } = await supabase
-        .from(type === 'email' ? 'email_templates' : 'whatsapp_templates')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      // Delete the template
+      await fastApiClient.templates.delete(id, type);
 
       toast({
         title: "Success",

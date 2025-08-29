@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, MessageCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EditWhatsAppTemplate() {
   const { id } = useParams<{ id: string }>();

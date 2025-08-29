@@ -100,6 +100,17 @@ async def import_vendors_from_csv(
                 "available_columns": import_result.get('available_columns', [])
             }
         
+        # Check if we have any valid vendor data
+        if not import_result.get('vendors_data') or len(import_result['vendors_data']) == 0:
+            return {
+                "success": False,
+                "error": "No valid records found. Please ensure vendor_code, company_name, valid email, and valid phone_number are provided.",
+                "total_rows": import_result.get('total_rows', 0),
+                "processing_errors": import_result.get('errors', []),
+                "available_columns": import_result.get('available_columns', []),
+                "required_columns": ['company_name', 'vendor_code', 'email']
+            }
+        
         # Create vendors in database
         created_vendors = []
         creation_errors = []
@@ -112,30 +123,56 @@ async def import_vendors_from_csv(
                     creation_errors.append(f"Vendor with email {vendor_data['email']} already exists")
                     continue
                 
-                # Create new vendor
+                # Create new vendor with comprehensive data
                 new_vendor = Vendor(
-                    name=vendor_data['name'],
-                    email=vendor_data['email'],
-                    company_name=vendor_data['company_name'],
-                    phone=vendor_data.get('phone', ''),
-                    whatsapp=vendor_data.get('whatsapp', ''),
-                    address=vendor_data.get('address', ''),
-                    city=vendor_data.get('city', ''),
-                    state=vendor_data.get('state', ''),
-                    pincode=vendor_data.get('pincode', ''),
-                    industry_type=vendor_data.get('industry_type', ''),
-                    business_type=vendor_data.get('business_type', ''),
-                    business_size=vendor_data.get('business_size', ''),
-                    registration_number=vendor_data.get('registration_number', ''),
+                    # Primary identification
+                    company_name=vendor_data.get('company_name', ''),
+                    vendor_code=vendor_data.get('vendor_code', ''),
+                    contact_person_name=vendor_data.get('contact_person_name', ''),
+                    
+                    # Contact information
+                    email=vendor_data.get('email', ''),
+                    phone_number=vendor_data.get('phone_number', ''),
+                    
+                    # Address and location
+                    registered_address=vendor_data.get('registered_address', ''),
+                    country_origin=vendor_data.get('country_origin', ''),
+                    
+                    # Business information
+                    supplier_type=vendor_data.get('supplier_type'),
+                    supplier_category=vendor_data.get('supplier_category', ''),
+                    annual_turnover=vendor_data.get('annual_turnover'),
+                    year_established=vendor_data.get('year_established'),
+                    currency=vendor_data.get('currency', 'INR'),
+                    
+                    # MSME status
+                    msme_status=vendor_data.get('msme_status'),
+                    
+                    # Legal information
+                    pan_number=vendor_data.get('pan_number', ''),
                     gst_number=vendor_data.get('gst_number', ''),
-                    created_by=current_user.id
+                    gta_registration=vendor_data.get('gta_registration', ''),
+                    incorporation_certificate_path=vendor_data.get('incorporation_certificate_path', ''),
+                    
+                    # Compliance flags
+                    nda=vendor_data.get('nda', False),
+                    sqa=vendor_data.get('sqa', False),
+                    four_m=vendor_data.get('four_m', False),
+                    code_of_conduct=vendor_data.get('code_of_conduct', False),
+                    compliance_agreement=vendor_data.get('compliance_agreement', False),
+                    self_declaration=vendor_data.get('self_declaration', False),
+                    
+                    # Legacy fields for backward compatibility
+                    vendor_name=vendor_data.get('company_name', ''),
+                    phone=vendor_data.get('phone_number', ''),
+                    created_by=str(current_user.id)
                 )
                 
                 db.add(new_vendor)
-                created_vendors.append(vendor_data['email'])
+                created_vendors.append(vendor_data.get('email', vendor_data.get('vendor_code', 'unknown')))
                 
             except Exception as e:
-                creation_errors.append(f"Failed to create vendor {vendor_data.get('email', 'unknown')}: {str(e)}")
+                creation_errors.append(f"Failed to create vendor {vendor_data.get('email', vendor_data.get('vendor_code', 'unknown'))}: {str(e)}")
         
         # Commit all changes
         try:

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "MSME Campaign Central"
     
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/msme_db"
+    DATABASE_URL: str = "sqlite:///./msme_campaign.db"
     
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"

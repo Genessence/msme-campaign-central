@@ -11,7 +11,7 @@ from app.models.campaign import Campaign, CampaignStatus, EmailTemplate, WhatsAp
 from app.models.vendor import Vendor
 from app.schemas.campaign import (
     CampaignCreate, CampaignUpdate, CampaignResponse, CampaignList,
-    CampaignExecutionRequest, CampaignExecutionResponse, CampaignStatus as CampaignStatusSchema,
+    CampaignExecutionRequest, CampaignExecutionResponse, CampaignStatusResponse,
     EmailTemplateCreate, EmailTemplateUpdate, EmailTemplateResponse,
     WhatsAppTemplateCreate, WhatsAppTemplateUpdate, WhatsAppTemplateResponse,
     CustomFormCreate, CustomFormUpdate, CustomFormResponse,
@@ -226,7 +226,7 @@ async def execute_campaign(
     )
 
 
-@router.get("/{campaign_id}/status", response_model=CampaignStatusSchema)
+@router.get("/{campaign_id}/status", response_model=CampaignStatusResponse)
 async def get_campaign_status(
     campaign_id: UUID,
     db: Session = Depends(get_db),
@@ -248,7 +248,7 @@ async def get_campaign_status(
     # Get vendor count
     vendor_count = len(campaign.target_vendors) if campaign.target_vendors else 0
     
-    return CampaignStatusSchema(
+    return CampaignStatusResponse(
         id=campaign.id,
         status=campaign.status,
         execution_progress={

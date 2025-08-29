@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-import uuid
 
 
 class UserBase(BaseModel):
@@ -20,7 +19,7 @@ class UserUpdate(UserBase):
 
 
 class UserResponse(UserBase):
-    id: uuid.UUID
+    id: str
     is_verified: bool
     created_at: datetime
     updated_at: Optional[datetime]

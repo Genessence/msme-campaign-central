@@ -80,7 +80,7 @@ class CampaignExecutionResponse(BaseModel):
     estimated_duration: Optional[str] = None
 
 
-class CampaignStatus(BaseModel):
+class CampaignStatusResponse(BaseModel):
     id: UUID
     status: CampaignStatus
     execution_progress: Optional[Dict[str, Any]] = None

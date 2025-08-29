@@ -3,10 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { fastApiClient } from '@/lib/fastapi-client';
+import { useAuth } from '@/hooks/useAuth';
 
-type Vendor = Tables<'vendors'>;
+interface Vendor {
+  id: string;
+  vendor_name: string;
+  company_name: string;
+  msme_status?: string;
+  msme_category?: string;
+}
 
 interface MSMEStats {
   MSME: number;
@@ -25,6 +31,7 @@ interface CategoryStats {
 export default function Analytics() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
   const [msmeStats, setMsmeStats] = useState<MSMEStats>({
     MSME: 0,
     'Non MSME': 0,
@@ -39,32 +46,14 @@ export default function Analytics() {
   });
 
   useEffect(() => {
-    fetchVendors();
-  }, []);
+    if (isAuthenticated) {
+      fetchVendors();
+    }
+  }, [isAuthenticated]);
 
   const fetchVendors = async () => {
     try {
-      let allVendors: Vendor[] = [];
-      let start = 0;
-      const limit = 1000;
-      
-      while (true) {
-        const { data, error } = await supabase
-          .from('vendors')
-          .select('*')
-          .range(start, start + limit - 1);
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) break;
-        
-        allVendors = [...allVendors, ...data];
-        
-        if (data.length < limit) break;
-        
-        start += limit;
-      }
-
+      const allVendors = await fastApiClient.vendors.getAll();
       setVendors(allVendors);
       calculateStats(allVendors);
     } catch (error) {

@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ChangePassword() {
   const [formData, setFormData] = useState({
@@ -22,9 +23,19 @@ export default function ChangePassword() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Error",
+        description: "Please log in to change your password.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
       toast({
@@ -56,15 +67,12 @@ export default function ChangePassword() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: formData.newPassword
-      });
-
-      if (error) throw error;
-
+      // TODO: Implement change password endpoint in FastAPI
+      // For now, show a message that this feature needs backend implementation
       toast({
-        title: "Success",
-        description: "Password changed successfully.",
+        title: "Info",
+        description: "Password change functionality needs to be implemented in the FastAPI backend.",
+        variant: "default",
       });
 
       setFormData({

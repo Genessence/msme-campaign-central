@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Users, Mail, MessageCircle, FileText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { CampaignFormData } from '@/pages/CreateCampaign';
 import { format } from 'date-fns';
 
@@ -16,9 +15,41 @@ interface CampaignReviewProps {
   isSubmitting: boolean;
 }
 
-type Vendor = Tables<'vendors'>;
-type EmailTemplate = Tables<'email_templates'>;
-type WhatsAppTemplate = Tables<'whatsapp_templates'>;
+interface Vendor {
+  id: string;
+  company_name: string;
+  vendor_code: string;
+  msme_status?: string;
+  primary_contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  registration_number?: string;
+  annual_turnover?: number;
+  employee_count?: number;
+  gst_compliance?: boolean;
+  statutory_compliance?: boolean;
+  financial_compliance?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: CampaignReviewProps) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -59,48 +90,34 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
 
   const fetchVendorsInBatches = async () => {
     try {
-      const batchSize = 100; // Supabase can handle up to ~1000, but let's be safe
-      const allVendors = [];
-
-      for (let i = 0; i < data.selectedVendors.length; i += batchSize) {
-        const batch = data.selectedVendors.slice(i, i + batchSize);
-        console.log(`Fetching vendor batch ${Math.floor(i/batchSize) + 1}, size: ${batch.length}`);
-        
-        const { data: vendorBatch, error } = await supabase
-          .from('vendors')
-          .select('*')
-          .in('id', batch);
-
-        if (error) {
-          console.error('Error fetching vendor batch:', error);
-          throw error;
-        }
-
-        if (vendorBatch) {
-          allVendors.push(...vendorBatch);
-        }
+      if (data.selectedVendors.length === 0) {
+        console.log('No vendors selected');
+        setVendors([]);
+        return;
       }
 
-      console.log('Successfully fetched all vendors:', allVendors.length);
-      setVendors(allVendors);
+      console.log('Fetching vendors with IDs:', data.selectedVendors);
+      
+      // Use FastAPI to get all vendors and filter by selected IDs
+      const allVendors = await fastApiClient.vendors.getAll();
+      console.log('All vendors from FastAPI:', allVendors.length);
+      
+      const selectedVendors = allVendors.filter(vendor => 
+        data.selectedVendors.includes(vendor.id)
+      );
+      
+      console.log('Filtered selected vendors:', selectedVendors.length);
+      setVendors(selectedVendors);
     } catch (error) {
-      console.error('Error fetching vendors in batches:', error);
+      console.error('Error fetching vendors:', error);
     }
   };
 
   const fetchEmailTemplate = async () => {
+    if (!data.emailTemplateId) return;
+    
     try {
-      const { data: template, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('id', data.emailTemplateId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching email template:', error);
-        throw error;
-      }
-
+      const template = await fastApiClient.templates.getById(data.emailTemplateId);
       console.log('Email template fetched:', template?.name);
       setEmailTemplate(template);
     } catch (error) {
@@ -109,18 +126,10 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
   };
 
   const fetchWhatsAppTemplate = async () => {
+    if (!data.whatsappTemplateId) return;
+    
     try {
-      const { data: template, error } = await supabase
-        .from('whatsapp_templates')
-        .select('*')
-        .eq('id', data.whatsappTemplateId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching WhatsApp template:', error);
-        throw error;
-      }
-
+      const template = await fastApiClient.templates.getById(data.whatsappTemplateId);
       console.log('WhatsApp template fetched:', template?.name);
       setWhatsappTemplate(template);
     } catch (error) {
@@ -206,7 +215,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
                             <div key={vendor.id} className="text-left p-2 border rounded">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-sm">{vendor.vendor_name}</p>
+                                  <p className="font-medium text-sm">{vendor.company_name}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {vendor.vendor_code}
                                   </p>
@@ -228,7 +237,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
                         <div key={vendor.id} className={`p-3 ${index < vendors.length - 1 ? 'border-b' : ''}`}>
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium">{vendor.vendor_name}</p>
+                              <p className="font-medium">{vendor.company_name}</p>
                               <p className="text-sm text-muted-foreground">
                                 {vendor.vendor_code} • {vendor.email}
                               </p>
@@ -237,11 +246,6 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
                               <Badge variant="outline">
                                 {vendor.msme_status}
                               </Badge>
-                              {vendor.group_category && (
-                                <Badge variant="secondary">
-                                  {vendor.group_category}
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -278,7 +282,7 @@ export function CampaignReview({ data, onSubmit, onPrev, isSubmitting }: Campaig
                       <p className="font-medium">{emailTemplate.name}</p>
                       <p className="text-sm text-muted-foreground">{emailTemplate.subject}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2">
-                        {emailTemplate.body.substring(0, 80)}...
+                        {emailTemplate.content.substring(0, 80)}...
                       </p>
                     </div>
                   ) : (

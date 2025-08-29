@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, MessageCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CreateWhatsAppTemplate() {
   const [formData, setFormData] = useState({
@@ -53,15 +54,12 @@ export default function CreateWhatsAppTemplate() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('whatsapp_templates')
-        .insert([{
-          name: formData.name.trim(),
-          content: formData.content.trim(),
-          variables: formData.variables,
-        }]);
-
-      if (error) throw error;
+      await fastApiClient.templates.create({
+        name: formData.name.trim(),
+        content: formData.content.trim(),
+        variables: formData.variables,
+        template_type: 'whatsapp'
+      });
 
       toast({
         title: "Success",

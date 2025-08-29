@@ -5,8 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Mail, MessageCircle, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { CampaignFormData } from '@/pages/CreateCampaign';
 
 interface TemplateSelectionProps {
@@ -16,8 +15,24 @@ interface TemplateSelectionProps {
   onPrev: () => void;
 }
 
-type EmailTemplate = Tables<'email_templates'>;
-type WhatsAppTemplate = Tables<'whatsapp_templates'>;
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  variables?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  content: string;
+  variables?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
 
 export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSelectionProps) {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
@@ -30,18 +45,24 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
 
   const fetchTemplates = async () => {
     try {
-      const [emailResult, whatsappResult] = await Promise.all([
-        supabase.from('email_templates').select('*').order('name'),
-        supabase.from('whatsapp_templates').select('*').order('name')
+      console.log('Fetching templates from FastAPI...');
+      
+      // Fetch email and WhatsApp templates separately
+      const [emailTemplates, whatsappTemplates] = await Promise.all([
+        fastApiClient.templates.getAll('email'),
+        fastApiClient.templates.getAll('whatsapp')
       ]);
+      
+      console.log('Email templates:', emailTemplates);
+      console.log('WhatsApp templates:', whatsappTemplates);
 
-      if (emailResult.error) throw emailResult.error;
-      if (whatsappResult.error) throw whatsappResult.error;
-
-      setEmailTemplates(emailResult.data || []);
-      setWhatsappTemplates(whatsappResult.data || []);
+      setEmailTemplates(emailTemplates || []);
+      setWhatsappTemplates(whatsappTemplates || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
+      // Set empty arrays on error
+      setEmailTemplates([]);
+      setWhatsappTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -121,7 +142,7 @@ export function TemplateSelection({ data, onUpdate, onNext, onPrev }: TemplateSe
                         </div>
                         <p className="text-sm font-medium">{template.subject}</p>
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {template.body.substring(0, 100)}...
+                          {template.content.substring(0, 100)}...
                         </p>
                         {template.variables && template.variables.length > 0 && (
                           <div className="flex flex-wrap gap-1">

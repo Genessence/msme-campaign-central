@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CreateEmailTemplate() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function CreateEmailTemplate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const handleEditorChange = (content: string) => {
     setFormData(prev => ({ ...prev, body: content }));
@@ -101,6 +103,15 @@ export default function CreateEmailTemplate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isAuthenticated) {
+      toast({
+        title: "Error",
+        description: "Please log in to create templates.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!formData.name.trim() || !formData.subject.trim() || !formData.body.trim()) {
       toast({
         title: "Error",
@@ -113,16 +124,13 @@ export default function CreateEmailTemplate() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('email_templates')
-        .insert([{
-          name: formData.name.trim(),
-          subject: formData.subject.trim(),
-          body: formData.body,
-          variables: formData.variables,
-        }]);
-
-      if (error) throw error;
+      await fastApiClient.templates.create({
+        name: formData.name.trim(),
+        subject: formData.subject.trim(),
+        body: formData.body,
+        variables: formData.variables,
+        template_type: 'email'
+      });
 
       toast({
         title: "Success",

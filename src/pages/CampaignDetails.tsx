@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, Calendar, Users, Mail, MessageSquare, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,7 @@ export default function CampaignDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
   const [vendorResponses, setVendorResponses] = useState<VendorResponse[]>([]);
   const [emailSends, setEmailSends] = useState<EmailSendRecord[]>([]);
@@ -79,128 +81,24 @@ export default function CampaignDetails() {
   const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (id && isAuthenticated) {
       fetchCampaignDetails();
-      
-      // Set up real-time subscription for email sends
-      const channel = supabase
-        .channel('campaign-email-sends')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'campaign_email_sends',
-            filter: `campaign_id=eq.${id}`
-          },
-          (payload) => {
-            console.log('Real-time email send update:', payload);
-            // Refresh the campaign details when new emails are sent
-            fetchCampaignDetails();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const fetchCampaignDetails = async () => {
     try {
       // Fetch campaign details
-      const { data: campaignData, error: campaignError } = await supabase
-        .from('msme_campaigns')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (campaignError) throw campaignError;
+      const campaignData = await fastApiClient.campaigns.getById(id!);
       setCampaign(campaignData);
 
-      // Fetch vendor responses with vendor details - all responses, not just completed
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('msme_responses')
-        .select(`
-          vendor_id,
-          response_status,
-          submitted_at,
-          form_data,
-          vendors (
-            vendor_name,
-            email,
-            phone
-          )
-        `)
-        .eq('campaign_id', id);
+      // For now, create empty responses and email sends as these features 
+      // would need to be implemented in the FastAPI backend
+      // TODO: Implement vendor responses and email tracking endpoints
+      setVendorResponses([]);
+      setEmailSends([]);
 
-      if (responsesError) throw responsesError;
-
-      const formattedResponses = responsesData?.map(response => ({
-        vendor_id: response.vendor_id,
-        vendor_name: response.vendors?.vendor_name || 'Unknown Vendor',
-        vendor_email: response.vendors?.email || null,
-        vendor_phone: response.vendors?.phone || null,
-        response_status: response.response_status,
-        submitted_at: response.submitted_at,
-        form_data: response.form_data,
-      })) || [];
-
-      setVendorResponses(formattedResponses);
-
-      // Fetch email send records in batches to handle large datasets
-      console.log('Fetching email sends for campaign:', id);
-      const allEmailSends = [];
-      const batchSize = 1000;
-      let from = 0;
-      
-      while (true) {
-        const { data: emailSendsBatch, error: emailSendsError } = await supabase
-          .from('campaign_email_sends')
-          .select(`
-            vendor_id,
-            sent_at,
-            email_type,
-            status,
-            vendors (
-              vendor_name,
-              email,
-              phone
-            )
-          `)
-          .eq('campaign_id', id)
-          .order('sent_at', { ascending: false })
-          .range(from, from + batchSize - 1);
-
-        if (emailSendsError) {
-          console.error('Error fetching email sends batch:', emailSendsError);
-          break;
-        }
-        
-        if (!emailSendsBatch || emailSendsBatch.length === 0) break;
-        
-        allEmailSends.push(...emailSendsBatch);
-        
-        // If we got less than batchSize, we've reached the end
-        if (emailSendsBatch.length < batchSize) break;
-        
-        from += batchSize;
-      }
-
-      console.log(`Found ${allEmailSends.length} total email send records`);
-      const formattedEmailSends = allEmailSends.map(send => ({
-        vendor_id: send.vendor_id,
-        vendor_name: send.vendors?.vendor_name || 'Unknown Vendor',
-        vendor_email: send.vendors?.email || null,
-        vendor_phone: send.vendors?.phone || null,
-        sent_at: send.sent_at,
-        email_type: send.email_type,
-        status: send.status,
-      }));
-
-      setEmailSends(formattedEmailSends);
-      console.log(`Set ${formattedEmailSends.length} email send records in state`);
+      console.log('Campaign details fetched:', campaignData);
     } catch (error) {
       console.error('Error fetching campaign details:', error);
       toast({
@@ -221,41 +119,17 @@ export default function CampaignDetails() {
     try {
       // Update campaign status to Active if it's currently Draft
       if (campaign.status === 'Draft') {
-        const { error: statusError } = await supabase
-          .from('msme_campaigns')
-          .update({ status: 'Active' })
-          .eq('id', campaign.id);
-
-        if (statusError) throw statusError;
+        await fastApiClient.campaigns.update(campaign.id, { status: 'Active' });
       }
 
-      // Start the chunked execution - the edge function will handle the rest automatically
-      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
-        body: { 
-          campaignId: campaign.id,
-          chunkSize: 50,
-          startIndex: 0
-        }
-      });
-
-      if (error) throw error;
-
+      // TODO: Implement campaign execution in FastAPI backend
+      // This would need endpoints for executing campaigns
       toast({
         title: "Campaign Execution Started",
-        description: `Campaign "${campaign.name}" is now being processed automatically. You can close this tab and the campaign will continue running.`,
+        description: `Campaign "${campaign.name}" execution has been initiated. This feature needs backend implementation.`,
       });
 
-      // Set up polling to refresh campaign details every 10 seconds during execution
-      const pollInterval = setInterval(() => {
-        fetchCampaignDetails();
-      }, 10000);
-
-      // Stop polling after 10 minutes or when campaign is no longer active
-      setTimeout(() => {
-        clearInterval(pollInterval);
-      }, 600000);
-
-      // Initial refresh after a short delay
+      // Refresh campaign details
       setTimeout(() => {
         fetchCampaignDetails();
       }, 3000);
@@ -284,20 +158,10 @@ export default function CampaignDetails() {
       
       toast({
         title: "Campaign Resumed",
-        description: `Resuming campaign "${campaign.name}" from ${alreadySent} sent emails. The campaign will continue running automatically.`,
+        description: `Campaign "${campaign.name}" resume functionality needs backend implementation.`,
       });
 
-      // Resume the chunked execution from where we left off
-      const { data, error } = await supabase.functions.invoke('execute-campaign-chunk', {
-        body: { 
-          campaignId: campaign.id,
-          chunkSize: 50,
-          startIndex: 0 // The function will automatically skip already sent emails
-        }
-      });
-
-      if (error) throw error;
-
+      // TODO: Implement campaign resume in FastAPI backend
       // Refresh campaign details after a short delay
       setTimeout(() => {
         fetchCampaignDetails();
@@ -319,12 +183,7 @@ export default function CampaignDetails() {
     if (!campaign) return;
     
     try {
-      const { error } = await supabase
-        .from('msme_campaigns')
-        .update({ status: 'Completed' })
-        .eq('id', campaign.id);
-
-      if (error) throw error;
+      await fastApiClient.campaigns.update(campaign.id, { status: 'Completed' });
 
       toast({
         title: "Campaign Ended",
