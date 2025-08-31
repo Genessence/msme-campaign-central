@@ -1,24 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { X, Plus, MessageCircle } from 'lucide-react';
-import { fastApiClient } from '@/lib/fastapi-client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { X, Plus, MessageCircle } from "lucide-react";
+import { fastApiClient } from "@/lib/fastapi-client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EditWhatsAppTemplate() {
   const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
-    name: '',
-    content: '',
+    name: "",
+    content: "",
     variables: [] as string[],
   });
-  const [newVariable, setNewVariable] = useState('');
+  const [newVariable, setNewVariable] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -37,43 +43,46 @@ export default function EditWhatsAppTemplate() {
       if (template) {
         setFormData({
           name: template.name,
-          content: template.content || '',
+          content: template.content || "",
           variables: template.variables || [],
         });
       }
     } catch (error) {
-      console.error('Error fetching template:', error);
+      console.error("Error fetching template:", error);
       toast({
         title: "Error",
         description: "Failed to fetch template. Please try again.",
         variant: "destructive",
       });
-      navigate('/templates');
+      navigate("/templates");
     } finally {
       setIsLoading(false);
     }
   };
 
   const addVariable = () => {
-    if (newVariable.trim() && !formData.variables.includes(newVariable.trim())) {
-      setFormData(prev => ({
+    if (
+      newVariable.trim() &&
+      !formData.variables.includes(newVariable.trim())
+    ) {
+      setFormData((prev) => ({
         ...prev,
-        variables: [...prev.variables, newVariable.trim()]
+        variables: [...prev.variables, newVariable.trim()],
       }));
-      setNewVariable('');
+      setNewVariable("");
     }
   };
 
   const removeVariable = (variable: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      variables: prev.variables.filter(v => v !== variable)
+      variables: prev.variables.filter((v) => v !== variable),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       toast({
         title: "Error",
@@ -82,7 +91,7 @@ export default function EditWhatsAppTemplate() {
       });
       return;
     }
-    
+
     if (!formData.name.trim() || !formData.content.trim()) {
       toast({
         title: "Error",
@@ -95,21 +104,24 @@ export default function EditWhatsAppTemplate() {
     setIsSubmitting(true);
 
     try {
-      await fastApiClient.templates.update(id!, {
-        name: formData.name.trim(),
-        content: formData.content.trim(),
-        variables: formData.variables,
-        template_type: 'whatsapp'
-      });
+      await fastApiClient.templates.update(
+        id!,
+        {
+          name: formData.name.trim(),
+          content: formData.content.trim(),
+          variables: formData.variables,
+        },
+        "whatsapp"
+      );
 
       toast({
         title: "Success",
         description: "WhatsApp template updated successfully.",
       });
 
-      navigate('/templates');
+      navigate("/templates");
     } catch (error) {
-      console.error('Error updating template:', error);
+      console.error("Error updating template:", error);
       toast({
         title: "Error",
         description: "Failed to update WhatsApp template. Please try again.",
@@ -125,7 +137,9 @@ export default function EditWhatsAppTemplate() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit WhatsApp Template</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Edit WhatsApp Template
+            </h1>
             <p className="text-muted-foreground">Loading template...</p>
           </div>
         </div>
@@ -138,15 +152,12 @@ export default function EditWhatsAppTemplate() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit WhatsApp Template</h1>
-          <p className="text-muted-foreground">
-            Update your WhatsApp template
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Edit WhatsApp Template
+          </h1>
+          <p className="text-muted-foreground">Update your WhatsApp template</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/templates')}
-        >
+        <Button variant="outline" onClick={() => navigate("/templates")}>
           Cancel
         </Button>
       </div>
@@ -168,7 +179,9 @@ export default function EditWhatsAppTemplate() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter template name"
                 required
               />
@@ -177,9 +190,28 @@ export default function EditWhatsAppTemplate() {
             <div className="space-y-2">
               <Label>Variables</Label>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Click on vendor fields to add as variables:</p>
+                <p className="text-sm text-muted-foreground">
+                  Click on vendor fields to add as variables:
+                </p>
                 <div className="flex flex-wrap gap-2">
-                  {['vendor_name', 'vendor_code', 'email', 'phone', 'location', 'business_category', 'group_category', 'msme_category', 'msme_status', 'udyam_number', 'registration_date', 'last_updated_date', 'opening_balance', 'closing_balance', 'credit_amount', 'debit_amount'].map((field) => (
+                  {[
+                    "vendor_name",
+                    "vendor_code",
+                    "email",
+                    "phone",
+                    "location",
+                    "business_category",
+                    "group_category",
+                    "msme_category",
+                    "msme_status",
+                    "udyam_number",
+                    "registration_date",
+                    "last_updated_date",
+                    "opening_balance",
+                    "closing_balance",
+                    "credit_amount",
+                    "debit_amount",
+                  ].map((field) => (
                     <Button
                       key={field}
                       type="button"
@@ -187,15 +219,15 @@ export default function EditWhatsAppTemplate() {
                       size="sm"
                       onClick={() => {
                         if (!formData.variables.includes(field)) {
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
-                            variables: [...prev.variables, field]
+                            variables: [...prev.variables, field],
                           }));
                         }
                       }}
                       className="text-xs"
                     >
-                      {field.replace('_', ' ')}
+                      {field.replace("_", " ")}
                     </Button>
                   ))}
                 </div>
@@ -204,7 +236,9 @@ export default function EditWhatsAppTemplate() {
                     value={newVariable}
                     onChange={(e) => setNewVariable(e.target.value)}
                     placeholder="Or add custom variable"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariable())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addVariable())
+                    }
                   />
                   <Button type="button" onClick={addVariable} size="sm">
                     <Plus className="h-4 w-4" />
@@ -214,7 +248,11 @@ export default function EditWhatsAppTemplate() {
               {formData.variables.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.variables.map((variable) => (
-                    <Badge key={variable} variant="secondary" className="flex items-center gap-1">
+                    <Badge
+                      key={variable}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
                       {variable}
                       <button
                         type="button"
@@ -228,7 +266,8 @@ export default function EditWhatsAppTemplate() {
                 </div>
               )}
               <p className="text-sm text-muted-foreground">
-                Variables can be used in the message content as {"{variable_name}"}
+                Variables can be used in the message content as{" "}
+                {"{variable_name}"}
               </p>
             </div>
           </CardContent>
@@ -247,14 +286,17 @@ export default function EditWhatsAppTemplate() {
               <Textarea
                 id="content"
                 value={formData.content}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, content: e.target.value }))
+                }
                 placeholder="Enter your WhatsApp message content here..."
                 rows={8}
                 required
               />
               <div className="flex flex-wrap gap-2 mt-2">
                 <p className="text-sm text-muted-foreground flex-1">
-                  Use variables in your message like {"{vendor_name}"} to personalize messages
+                  Use variables in your message like {"{vendor_name}"} to
+                  personalize messages
                 </p>
                 {formData.variables.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -265,7 +307,9 @@ export default function EditWhatsAppTemplate() {
                         size="sm"
                         type="button"
                         onClick={() => {
-                          const textarea = document.getElementById('content') as HTMLTextAreaElement;
+                          const textarea = document.getElementById(
+                            "content"
+                          ) as HTMLTextAreaElement;
                           if (textarea) {
                             const start = textarea.selectionStart;
                             const end = textarea.selectionEnd;
@@ -273,10 +317,16 @@ export default function EditWhatsAppTemplate() {
                             const before = text.substring(0, start);
                             const after = text.substring(end);
                             const newText = before + `{${variable}}` + after;
-                            setFormData(prev => ({ ...prev, content: newText }));
+                            setFormData((prev) => ({
+                              ...prev,
+                              content: newText,
+                            }));
                             setTimeout(() => {
                               textarea.focus();
-                              textarea.setSelectionRange(start + variable.length + 2, start + variable.length + 2);
+                              textarea.setSelectionRange(
+                                start + variable.length + 2,
+                                start + variable.length + 2
+                              );
                             }, 0);
                           }
                         }}
@@ -299,9 +349,13 @@ export default function EditWhatsAppTemplate() {
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-w-sm">
                       <div className="flex items-center gap-2 mb-2">
                         <MessageCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">WhatsApp Message</span>
+                        <span className="text-sm font-medium text-green-800">
+                          WhatsApp Message
+                        </span>
                       </div>
-                      <p className="text-sm whitespace-pre-wrap">{formData.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {formData.content}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -314,12 +368,12 @@ export default function EditWhatsAppTemplate() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/templates')}
+            onClick={() => navigate("/templates")}
           >
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Updating...' : 'Update Template'}
+            {isSubmitting ? "Updating..." : "Update Template"}
           </Button>
         </div>
       </form>

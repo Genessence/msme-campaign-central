@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -15,15 +21,17 @@ interface VendorUploadProps {
 export function VendorUpload({ onUploadComplete }: VendorUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadStatus, setUploadStatus] = useState("");
   const { toast } = useToast();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    if (!file.name.endsWith('.csv')) {
+    if (!file.name.endsWith(".csv")) {
       toast({
         title: "Invalid File Type",
         description: "Please upload a CSV file",
@@ -34,19 +42,25 @@ export function VendorUpload({ onUploadComplete }: VendorUploadProps) {
 
     setUploading(true);
     setUploadProgress(0);
-    setUploadStatus('Uploading file...');
+    setUploadStatus("Uploading file...");
 
     try {
       // Test backend connection first
-      setUploadStatus('Connecting to server...');
+      setUploadStatus("Connecting to server...");
       setUploadProgress(10);
+
+      console.log("Testing connection...");
+      console.log("fastApiClient:", fastApiClient);
+      console.log("testConnection method:", fastApiClient.testConnection);
 
       const isConnected = await fastApiClient.testConnection();
       if (!isConnected) {
-        throw new Error('Cannot connect to backend server. Please ensure the backend is running on http://127.0.0.1:8000');
+        throw new Error(
+          "Cannot connect to backend server. Please ensure the backend is running on http://localhost:8000"
+        );
       }
 
-      setUploadStatus('Processing CSV file...');
+      setUploadStatus("Processing CSV file...");
       setUploadProgress(30);
 
       // Upload the CSV file
@@ -57,41 +71,60 @@ export function VendorUpload({ onUploadComplete }: VendorUploadProps) {
       if (result.success) {
         toast({
           title: "Upload Successful",
-          description: `${result.vendors_created || 0} vendors imported successfully`,
+          description: `${
+            result.vendors_created || 0
+          } vendors imported successfully`,
         });
 
         // Show detailed results
         if (result.import_errors && result.import_errors.length > 0) {
-          console.warn('Import errors:', result.import_errors);
-        }
-        
-        if (result.creation_errors && result.creation_errors.length > 0) {
-          console.warn('Creation errors:', result.creation_errors);
+          console.warn("Import errors:", result.import_errors);
         }
 
-        setUploadStatus(`Import complete: ${result.vendors_created || 0} vendors created`);
-        
+        if (result.creation_errors && result.creation_errors.length > 0) {
+          console.warn("Creation errors:", result.creation_errors);
+        }
+
+        setUploadStatus(
+          `Import complete: ${result.vendors_created || 0} vendors created`
+        );
+
         // Call callback to refresh vendor list
         if (onUploadComplete) {
           onUploadComplete();
         }
       } else {
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result.error || "Upload failed");
+      }
+    } catch (error: any) {
+      console.error("Upload error:", error);
+
+      let errorMessage = error.message || "An error occurred during upload";
+
+      // Provide more specific error messages
+      if (error.message?.includes("Failed to fetch")) {
+        errorMessage =
+          "Cannot connect to backend server. Please ensure the backend is running.";
+      } else if (error.message?.includes("401")) {
+        errorMessage = "Authentication failed. Please log in again.";
+      } else if (error.message?.includes("413")) {
+        errorMessage = "File too large. Please use a smaller CSV file.";
+      } else if (error.message?.includes("422")) {
+        errorMessage =
+          "Invalid file format. Please ensure it's a valid CSV file.";
       }
 
-    } catch (error: any) {
-      console.error('Upload error:', error);
       toast({
         title: "Upload Failed",
-        description: error.message || "An error occurred during upload",
+        description: errorMessage,
         variant: "destructive",
       });
-      setUploadStatus('Upload failed');
+      setUploadStatus("Upload failed");
     } finally {
       setUploading(false);
       setUploadProgress(0);
       // Reset file input
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -103,8 +136,9 @@ export function VendorUpload({ onUploadComplete }: VendorUploadProps) {
           Upload Vendor CSV
         </CardTitle>
         <CardDescription>
-          Upload vendor data from a CSV file. Required columns: company_name, vendor_code, email.
-          Optional columns: contact_person_name, phone_number, registered_address, etc.
+          Upload vendor data from a CSV file. Required columns: company_name,
+          vendor_code, email. Optional columns: contact_person_name,
+          phone_number, registered_address, etc.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -130,13 +164,28 @@ export function VendorUpload({ onUploadComplete }: VendorUploadProps) {
         )}
 
         <div className="text-sm text-muted-foreground">
-          <p><strong>CSV Format Requirements:</strong></p>
+          <p>
+            <strong>CSV Format Requirements:</strong>
+          </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Required:</strong> company_name, vendor_code, email</li>
-            <li><strong>Optional:</strong> contact_person_name, phone_number, registered_address, country_origin</li>
-            <li><strong>Business:</strong> supplier_type, supplier_category, annual_turnover, year_established</li>
-            <li><strong>Legal:</strong> pan_number, gst_number, gta_registration</li>
-            <li><strong>Compliance:</strong> nda, sqa, four_m, code_of_conduct (true/false)</li>
+            <li>
+              <strong>Required:</strong> company_name, vendor_code, email
+            </li>
+            <li>
+              <strong>Optional:</strong> contact_person_name, phone_number,
+              registered_address, country_origin
+            </li>
+            <li>
+              <strong>Business:</strong> supplier_type, supplier_category,
+              annual_turnover, year_established
+            </li>
+            <li>
+              <strong>Legal:</strong> pan_number, gst_number, gta_registration
+            </li>
+            <li>
+              <strong>Compliance:</strong> nda, sqa, four_m, code_of_conduct
+              (true/false)
+            </li>
           </ul>
         </div>
       </CardContent>

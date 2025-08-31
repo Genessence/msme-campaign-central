@@ -1,25 +1,31 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { X, Plus } from 'lucide-react';
-import { fastApiClient } from '@/lib/fastapi-client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { X, Plus } from "lucide-react";
+import { fastApiClient } from "@/lib/fastapi-client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EditEmailTemplate() {
   const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
-    name: '',
-    subject: '',
-    body: '',
+    name: "",
+    subject: "",
+    body: "",
     variables: [] as string[],
   });
-  const [newVariable, setNewVariable] = useState('');
+  const [newVariable, setNewVariable] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -45,38 +51,41 @@ export default function EditEmailTemplate() {
         });
       }
     } catch (error) {
-      console.error('Error fetching template:', error);
+      console.error("Error fetching template:", error);
       toast({
         title: "Error",
         description: "Failed to fetch template. Please try again.",
         variant: "destructive",
       });
-      navigate('/templates');
+      navigate("/templates");
     } finally {
       setIsLoading(false);
     }
   };
 
   const addVariable = () => {
-    if (newVariable.trim() && !formData.variables.includes(newVariable.trim())) {
-      setFormData(prev => ({
+    if (
+      newVariable.trim() &&
+      !formData.variables.includes(newVariable.trim())
+    ) {
+      setFormData((prev) => ({
         ...prev,
-        variables: [...prev.variables, newVariable.trim()]
+        variables: [...prev.variables, newVariable.trim()],
       }));
-      setNewVariable('');
+      setNewVariable("");
     }
   };
 
   const removeVariable = (variable: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      variables: prev.variables.filter(v => v !== variable)
+      variables: prev.variables.filter((v) => v !== variable),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       toast({
         title: "Error",
@@ -85,8 +94,12 @@ export default function EditEmailTemplate() {
       });
       return;
     }
-    
-    if (!formData.name.trim() || !formData.subject.trim() || !formData.body.trim()) {
+
+    if (
+      !formData.name.trim() ||
+      !formData.subject.trim() ||
+      !formData.body.trim()
+    ) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
@@ -98,22 +111,25 @@ export default function EditEmailTemplate() {
     setIsSubmitting(true);
 
     try {
-      await fastApiClient.templates.update(id!, {
-        name: formData.name.trim(),
-        subject: formData.subject.trim(),
-        body: formData.body,
-        variables: formData.variables,
-        template_type: 'email'
-      });
+      await fastApiClient.templates.update(
+        id!,
+        {
+          name: formData.name.trim(),
+          subject: formData.subject.trim(),
+          body: formData.body,
+          variables: formData.variables,
+        },
+        "email"
+      );
 
       toast({
         title: "Success",
         description: "Email template updated successfully.",
       });
 
-      navigate('/templates');
+      navigate("/templates");
     } catch (error) {
-      console.error('Error updating template:', error);
+      console.error("Error updating template:", error);
       toast({
         title: "Error",
         description: "Failed to update email template. Please try again.",
@@ -129,7 +145,9 @@ export default function EditEmailTemplate() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit Email Template</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Edit Email Template
+            </h1>
             <p className="text-muted-foreground">Loading template...</p>
           </div>
         </div>
@@ -142,15 +160,12 @@ export default function EditEmailTemplate() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit Email Template</h1>
-          <p className="text-muted-foreground">
-            Update your email template
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Edit Email Template
+          </h1>
+          <p className="text-muted-foreground">Update your email template</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/templates')}
-        >
+        <Button variant="outline" onClick={() => navigate("/templates")}>
           Cancel
         </Button>
       </div>
@@ -169,7 +184,9 @@ export default function EditEmailTemplate() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter template name"
                 required
               />
@@ -180,7 +197,9 @@ export default function EditEmailTemplate() {
               <Input
                 id="subject"
                 value={formData.subject}
-                onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, subject: e.target.value }))
+                }
                 placeholder="Enter email subject"
                 required
               />
@@ -189,9 +208,28 @@ export default function EditEmailTemplate() {
             <div className="space-y-2">
               <Label>Variables</Label>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Click on vendor fields to add as variables:</p>
+                <p className="text-sm text-muted-foreground">
+                  Click on vendor fields to add as variables:
+                </p>
                 <div className="flex flex-wrap gap-2">
-                  {['vendor_name', 'vendor_code', 'email', 'phone', 'location', 'business_category', 'group_category', 'msme_category', 'msme_status', 'udyam_number', 'registration_date', 'last_updated_date', 'opening_balance', 'closing_balance', 'credit_amount', 'debit_amount'].map((field) => (
+                  {[
+                    "vendor_name",
+                    "vendor_code",
+                    "email",
+                    "phone",
+                    "location",
+                    "business_category",
+                    "group_category",
+                    "msme_category",
+                    "msme_status",
+                    "udyam_number",
+                    "registration_date",
+                    "last_updated_date",
+                    "opening_balance",
+                    "closing_balance",
+                    "credit_amount",
+                    "debit_amount",
+                  ].map((field) => (
                     <Button
                       key={field}
                       type="button"
@@ -199,15 +237,15 @@ export default function EditEmailTemplate() {
                       size="sm"
                       onClick={() => {
                         if (!formData.variables.includes(field)) {
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
-                            variables: [...prev.variables, field]
+                            variables: [...prev.variables, field],
                           }));
                         }
                       }}
                       className="text-xs"
                     >
-                      {field.replace('_', ' ')}
+                      {field.replace("_", " ")}
                     </Button>
                   ))}
                 </div>
@@ -216,7 +254,9 @@ export default function EditEmailTemplate() {
                     value={newVariable}
                     onChange={(e) => setNewVariable(e.target.value)}
                     placeholder="Or add custom variable"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariable())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addVariable())
+                    }
                   />
                   <Button type="button" onClick={addVariable} size="sm">
                     <Plus className="h-4 w-4" />
@@ -226,7 +266,11 @@ export default function EditEmailTemplate() {
               {formData.variables.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.variables.map((variable) => (
-                    <Badge key={variable} variant="secondary" className="flex items-center gap-1">
+                    <Badge
+                      key={variable}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
                       {variable}
                       <button
                         type="button"
@@ -259,18 +303,21 @@ export default function EditEmailTemplate() {
               <div className="border rounded-md overflow-hidden">
                 <Textarea
                   value={formData.body}
-                  onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, body: e.target.value }))
+                  }
                   placeholder="Enter your email content here..."
                   className="min-h-[400px] border-none resize-none"
-                  style={{ 
-                    height: '400px',
-                    backgroundColor: 'hsl(var(--background))',
+                  style={{
+                    height: "400px",
+                    backgroundColor: "hsl(var(--background))",
                   }}
                 />
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 <p className="text-sm text-muted-foreground flex-1">
-                  Use variables in your content like {"{vendor_name}"} to personalize emails
+                  Use variables in your content like {"{vendor_name}"} to
+                  personalize emails
                 </p>
                 {formData.variables.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -281,7 +328,9 @@ export default function EditEmailTemplate() {
                         size="sm"
                         type="button"
                         onClick={() => {
-                          const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                          const textarea = document.querySelector(
+                            "textarea"
+                          ) as HTMLTextAreaElement;
                           if (textarea) {
                             const start = textarea.selectionStart;
                             const end = textarea.selectionEnd;
@@ -289,10 +338,13 @@ export default function EditEmailTemplate() {
                             const before = text.substring(0, start);
                             const after = text.substring(end);
                             const newText = before + `{${variable}}` + after;
-                            setFormData(prev => ({ ...prev, body: newText }));
+                            setFormData((prev) => ({ ...prev, body: newText }));
                             setTimeout(() => {
                               textarea.focus();
-                              textarea.setSelectionRange(start + variable.length + 2, start + variable.length + 2);
+                              textarea.setSelectionRange(
+                                start + variable.length + 2,
+                                start + variable.length + 2
+                              );
                             }, 0);
                           }
                         }}
@@ -312,12 +364,12 @@ export default function EditEmailTemplate() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/templates')}
+            onClick={() => navigate("/templates")}
           >
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Updating...' : 'Update Template'}
+            {isSubmitting ? "Updating..." : "Update Template"}
           </Button>
         </div>
       </form>

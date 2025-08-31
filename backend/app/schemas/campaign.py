@@ -24,9 +24,9 @@ class CampaignBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     communication_only: bool = False
-    email_template_id: Optional[UUID] = None
-    whatsapp_template_id: Optional[UUID] = None
-    form_id: Optional[UUID] = None
+    email_template_id: Optional[str] = None
+    whatsapp_template_id: Optional[str] = None
+    form_id: Optional[str] = None
     target_vendors: Optional[List[str]] = None
     deadline: Optional[datetime] = None
 
@@ -40,17 +40,17 @@ class CampaignUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[CampaignStatus] = None
     communication_only: Optional[bool] = None
-    email_template_id: Optional[UUID] = None
-    whatsapp_template_id: Optional[UUID] = None
-    form_id: Optional[UUID] = None
+    email_template_id: Optional[str] = None
+    whatsapp_template_id: Optional[str] = None
+    form_id: Optional[str] = None
     target_vendors: Optional[List[str]] = None
     deadline: Optional[datetime] = None
 
 
 class CampaignResponse(CampaignBase):
-    id: UUID
+    id: str
     status: CampaignStatus
-    created_by: Optional[UUID]
+    created_by: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -111,8 +111,8 @@ class EmailTemplateUpdate(BaseModel):
 
 
 class EmailTemplateResponse(EmailTemplateBase):
-    id: UUID
-    created_by: Optional[UUID]
+    id: str
+    created_by: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -138,8 +138,8 @@ class WhatsAppTemplateUpdate(BaseModel):
 
 
 class WhatsAppTemplateResponse(WhatsAppTemplateBase):
-    id: UUID
-    created_by: Optional[UUID]
+    id: str
+    created_by: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
 

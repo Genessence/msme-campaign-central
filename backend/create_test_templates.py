@@ -23,7 +23,8 @@ def create_test_templates():
                 id="test-email-template-1",
                 name="Basic MSME Status Update",
                 subject="MSME Status Update Required",
-                body="Dear {{vendor_name}},\n\nPlease update your MSME status information.\n\nBest regards,\nAmber Compliance Team"
+                body="Dear {{vendor_name}},\n\nPlease update your MSME status information.\n\nBest regards,\nAmber Compliance Team",
+                created_by="b54fbfe9-6d2a-4eb3-bd7c-d7771210f2e5"  # Admin user ID
             )
             db.add(email_template)
             print(f"Created email template: {email_template.id}")
@@ -33,7 +34,8 @@ def create_test_templates():
             whatsapp_template = WhatsAppTemplate(
                 id="test-whatsapp-template-1",
                 name="MSME Status WhatsApp",
-                content="Hi {{vendor_name}}, please update your MSME status via our portal. Thank you!"
+                content="Hi {{vendor_name}}, please update your MSME status via our portal. Thank you!",
+                created_by="b54fbfe9-6d2a-4eb3-bd7c-d7771210f2e5"  # Admin user ID
             )
             db.add(whatsapp_template)
             print(f"Created WhatsApp template: {whatsapp_template.id}")

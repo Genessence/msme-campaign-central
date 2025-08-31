@@ -68,7 +68,7 @@ async def create_email_template(
 
 @router.get("/email/{template_id}", response_model=EmailTemplateResponse)
 async def get_email_template(
-    template_id: UUID,
+    template_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -87,7 +87,7 @@ async def get_email_template(
 
 @router.put("/email/{template_id}", response_model=EmailTemplateResponse)
 async def update_email_template(
-    template_id: UUID,
+    template_id: str,
     template_update: EmailTemplateUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -116,7 +116,7 @@ async def update_email_template(
 
 @router.delete("/email/{template_id}")
 async def delete_email_template(
-    template_id: UUID,
+    template_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -187,7 +187,7 @@ async def create_whatsapp_template(
 
 @router.get("/whatsapp/{template_id}", response_model=WhatsAppTemplateResponse)
 async def get_whatsapp_template(
-    template_id: UUID,
+    template_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -206,7 +206,7 @@ async def get_whatsapp_template(
 
 @router.put("/whatsapp/{template_id}", response_model=WhatsAppTemplateResponse)
 async def update_whatsapp_template(
-    template_id: UUID,
+    template_id: str,
     template_update: WhatsAppTemplateUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -235,7 +235,7 @@ async def update_whatsapp_template(
 
 @router.delete("/whatsapp/{template_id}")
 async def delete_whatsapp_template(
-    template_id: UUID,
+    template_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

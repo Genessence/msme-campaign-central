@@ -1,18 +1,23 @@
-
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { fastApiClient } from '@/lib/fastapi-client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle, Clock } from 'lucide-react';
-import { CampaignBasicInfo } from '@/components/campaign-wizard/CampaignBasicInfo';
-import { VendorSelection } from '@/components/campaign-wizard/VendorSelection';
-import { TemplateSelection } from '@/components/campaign-wizard/TemplateSelection';
-import { CampaignReview } from '@/components/campaign-wizard/CampaignReview';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fastApiClient } from "@/lib/fastapi-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle, Circle, Clock } from "lucide-react";
+import { CampaignBasicInfo } from "@/components/campaign-wizard/CampaignBasicInfo";
+import { VendorSelection } from "@/components/campaign-wizard/VendorSelection";
+import { TemplateSelection } from "@/components/campaign-wizard/TemplateSelection";
+import { CampaignReview } from "@/components/campaign-wizard/CampaignReview";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export interface CampaignFormData {
   name: string;
@@ -24,31 +29,31 @@ export interface CampaignFormData {
 }
 
 const steps = [
-  { id: 1, title: 'Basic Information', description: 'Campaign details' },
-  { id: 2, title: 'Target Vendors', description: 'Select vendors' },
-  { id: 3, title: 'Templates', description: 'Choose templates' },
-  { id: 4, title: 'Review & Launch', description: 'Final review' },
+  { id: 1, title: "Basic Information", description: "Campaign details" },
+  { id: 2, title: "Target Vendors", description: "Select vendors" },
+  { id: 3, title: "Templates", description: "Choose templates" },
+  { id: 4, title: "Review & Launch", description: "Final review" },
 ];
 
 export default function CreateCampaign() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<CampaignFormData>({
-    name: '',
-    description: '',
-    deadline: '',
+    name: "",
+    description: "",
+    deadline: "",
     selectedVendors: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [executionStatus, setExecutionStatus] = useState<string>('');
+  const [executionStatus, setExecutionStatus] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
   const updateFormData = (data: Partial<CampaignFormData>) => {
-    console.log('Updating form data:', data);
-    setFormData(prev => {
+    console.log("Updating form data:", data);
+    setFormData((prev) => {
       const updated = { ...prev, ...data };
-      console.log('Updated form data:', updated);
+      console.log("Updated form data:", updated);
       return updated;
     });
   };
@@ -67,9 +72,9 @@ export default function CreateCampaign() {
 
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsSubmitting(true);
-    
+
     try {
-      console.log('Creating campaign with data:', {
+      console.log("Creating campaign with data:", {
         name: formData.name,
         description: formData.description,
         deadline: formData.deadline,
@@ -79,19 +84,32 @@ export default function CreateCampaign() {
         selectedVendorsCount: formData.selectedVendors.length,
       });
 
+      console.log("Template IDs being sent:");
+      console.log("  Email Template ID:", formData.emailTemplateId);
+      console.log("  WhatsApp Template ID:", formData.whatsappTemplateId);
+
       // Create campaign via FastAPI
       const campaignData = {
         name: formData.name,
         description: formData.description || null,
-        deadline: formData.deadline || null,
+        deadline: formData.deadline
+          ? new Date(formData.deadline).toISOString()
+          : null,
         target_vendors: formData.selectedVendors,
         email_template_id: formData.emailTemplateId || null,
         whatsapp_template_id: formData.whatsappTemplateId || null,
         communication_only: true, // Set to true if no templates selected
       };
 
-      const createdCampaign = await fastApiClient.campaigns.create(campaignData);
-      console.log('Campaign created successfully:', createdCampaign);
+      console.log(
+        "Sending campaign data to backend:",
+        JSON.stringify(campaignData, null, 2)
+      );
+
+      const createdCampaign = await fastApiClient.campaigns.create(
+        campaignData
+      );
+      console.log("Campaign created successfully:", createdCampaign);
 
       toast({
         title: "Campaign Created",
@@ -99,12 +117,26 @@ export default function CreateCampaign() {
       });
 
       // Navigate back to campaigns page
-      navigate('/campaigns');
+      navigate("/campaigns");
     } catch (error) {
-      console.error('Campaign creation error:', error);
+      console.error("Campaign creation error:", error);
+
+      let errorMessage = "Unknown error occurred";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "object" && error !== null) {
+        // Try to extract error details from response
+        const errorObj = error as any;
+        if (errorObj.detail) {
+          errorMessage = errorObj.detail;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        }
+      }
+
       toast({
         title: "Error",
-        description: `Failed to create campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to create campaign: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -168,7 +200,7 @@ export default function CreateCampaign() {
         </div>
         <Button
           variant="outline"
-          onClick={() => navigate('/campaigns')}
+          onClick={() => navigate("/campaigns")}
           disabled={isSubmitting}
         >
           Cancel
@@ -191,8 +223,12 @@ export default function CreateCampaign() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Step {currentStep} of {steps.length}</CardTitle>
-              <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+              <CardTitle className="text-lg">
+                Step {currentStep} of {steps.length}
+              </CardTitle>
+              <CardDescription>
+                {steps[currentStep - 1].description}
+              </CardDescription>
             </div>
             <div className="text-sm text-muted-foreground">
               {Math.round(progress)}% Complete
@@ -217,26 +253,30 @@ export default function CreateCampaign() {
                 )}
               </div>
               <div className="text-center">
-                <div className={`text-sm font-medium ${
-                  currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
-                }`}>
+                <div
+                  className={`text-sm font-medium ${
+                    currentStep >= step.id
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
                   {step.title}
                 </div>
               </div>
             </div>
             {index < steps.length - 1 && (
-              <div className={`h-px w-16 mx-4 ${
-                currentStep > step.id ? 'bg-primary' : 'bg-muted'
-              }`} />
+              <div
+                className={`h-px w-16 mx-4 ${
+                  currentStep > step.id ? "bg-primary" : "bg-muted"
+                }`}
+              />
             )}
           </div>
         ))}
       </div>
 
       {/* Step Content */}
-      <div className="min-h-96">
-        {renderStep()}
-      </div>
+      <div className="min-h-96">{renderStep()}</div>
     </div>
   );
 }
