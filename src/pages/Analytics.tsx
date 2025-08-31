@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { fastApiClient } from '@/lib/fastapi-client';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { fastApiClient } from "@/lib/fastapi-client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Vendor {
   id: string;
@@ -16,7 +22,7 @@ interface Vendor {
 
 interface MSMEStats {
   MSME: number;
-  'Non MSME': number;
+  "Non MSME": number;
   Others: number;
   total: number;
 }
@@ -31,10 +37,11 @@ interface CategoryStats {
 export default function Analytics() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const [msmeStats, setMsmeStats] = useState<MSMEStats>({
     MSME: 0,
-    'Non MSME': 0,
+    "Non MSME": 0,
     Others: 0,
     total: 0,
   });
@@ -53,11 +60,13 @@ export default function Analytics() {
 
   const fetchVendors = async () => {
     try {
+      setError(null);
       const allVendors = await fastApiClient.vendors.getAll();
       setVendors(allVendors);
       calculateStats(allVendors);
     } catch (error) {
-      console.error('Error fetching vendors:', error);
+      console.error("Error fetching vendors:", error);
+      setError("Failed to load vendor data. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +75,7 @@ export default function Analytics() {
   const calculateStats = (vendorData: Vendor[]) => {
     const msmeStatusCounts: MSMEStats = {
       MSME: 0,
-      'Non MSME': 0,
+      "Non MSME": 0,
       Others: 0,
       total: vendorData.length,
     };
@@ -78,13 +87,40 @@ export default function Analytics() {
       Others: 0,
     };
 
-    vendorData.forEach(vendor => {
-      const status = vendor.msme_status || 'Others';
-      if (status in msmeStatusCounts) {
-        msmeStatusCounts[status as keyof Omit<MSMEStats, 'total'>]++;
+    vendorData.forEach((vendor) => {
+      // Handle missing or null msme_status
+      let status = "Others";
+      if (vendor.msme_status) {
+        // Map backend enum values to frontend display values
+        if (
+          vendor.msme_status.toLowerCase().includes("msme") ||
+          vendor.msme_status.toLowerCase() === "micro" ||
+          vendor.msme_status.toLowerCase() === "small" ||
+          vendor.msme_status.toLowerCase() === "medium"
+        ) {
+          status = "MSME";
+        } else if (vendor.msme_status.toLowerCase().includes("non_msme")) {
+          status = "Non MSME";
+        }
       }
 
-      const category = vendor.msme_category || 'Others';
+      if (status in msmeStatusCounts) {
+        msmeStatusCounts[status as keyof Omit<MSMEStats, "total">]++;
+      }
+
+      // Handle missing or null msme_category
+      let category = "Others";
+      if (vendor.msme_category) {
+        const categoryLower = vendor.msme_category.toLowerCase();
+        if (categoryLower === "micro") {
+          category = "Micro";
+        } else if (categoryLower === "small") {
+          category = "Small";
+        } else if (categoryLower === "medium") {
+          category = "Medium";
+        }
+      }
+
       if (category in categoryCounts) {
         categoryCounts[category as keyof CategoryStats]++;
       }
@@ -95,13 +131,30 @@ export default function Analytics() {
   };
 
   const getPercentage = (value: number, total: number) => {
-    return total > 0 ? ((value / total) * 100) : 0;
+    return total > 0 ? (value / total) * 100 : 0;
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-lg font-semibold mb-2">Error</div>
+          <div className="text-muted-foreground mb-4">{error}</div>
+          <button
+            onClick={fetchVendors}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -126,11 +179,15 @@ export default function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Vendors
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{msmeStats.total}</div>
-                <p className="text-xs text-muted-foreground">All registered vendors</p>
+                <p className="text-xs text-muted-foreground">
+                  All registered vendors
+                </p>
               </CardContent>
             </Card>
 
@@ -142,8 +199,12 @@ export default function Analytics() {
                 </Badge>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{msmeStats.MSME}</div>
-                <p className="text-xs text-muted-foreground">Certified MSME vendors</p>
+                <div className="text-2xl font-bold text-green-600">
+                  {msmeStats.MSME}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Certified MSME vendors
+                </p>
               </CardContent>
             </Card>
 
@@ -151,25 +212,39 @@ export default function Analytics() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Non MSME</CardTitle>
                 <Badge className="bg-red-50 text-red-700 border-red-200">
-                  {getPercentage(msmeStats['Non MSME'], msmeStats.total).toFixed(1)}%
+                  {getPercentage(
+                    msmeStats["Non MSME"],
+                    msmeStats.total
+                  ).toFixed(1)}
+                  %
                 </Badge>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{msmeStats['Non MSME']}</div>
-                <p className="text-xs text-muted-foreground">Non-MSME vendors</p>
+                <div className="text-2xl font-bold text-red-600">
+                  {msmeStats["Non MSME"]}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Non-MSME vendors
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Others/Pending</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Others/Pending
+                </CardTitle>
                 <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
                   {getPercentage(msmeStats.Others, msmeStats.total).toFixed(1)}%
                 </Badge>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{msmeStats.Others}</div>
-                <p className="text-xs text-muted-foreground">Pending or other status</p>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {msmeStats.Others}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pending or other status
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -179,7 +254,9 @@ export default function Analytics() {
             <Card>
               <CardHeader>
                 <CardTitle>MSME Status Distribution</CardTitle>
-                <CardDescription>Visual breakdown of vendor status</CardDescription>
+                <CardDescription>
+                  Visual breakdown of vendor status
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
@@ -189,11 +266,15 @@ export default function Analytics() {
                       <span className="text-sm font-medium">MSME</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {msmeStats.MSME} ({getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%)
+                      {msmeStats.MSME} (
+                      {getPercentage(msmeStats.MSME, msmeStats.total).toFixed(
+                        1
+                      )}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(msmeStats.MSME, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(msmeStats.MSME, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -205,11 +286,19 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Non MSME</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {msmeStats['Non MSME']} ({getPercentage(msmeStats['Non MSME'], msmeStats.total).toFixed(1)}%)
+                      {msmeStats["Non MSME"]} (
+                      {getPercentage(
+                        msmeStats["Non MSME"],
+                        msmeStats.total
+                      ).toFixed(1)}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(msmeStats['Non MSME'], msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(
+                      msmeStats["Non MSME"],
+                      msmeStats.total
+                    )}
                     className="h-2"
                   />
                 </div>
@@ -221,11 +310,15 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Others</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {msmeStats.Others} ({getPercentage(msmeStats.Others, msmeStats.total).toFixed(1)}%)
+                      {msmeStats.Others} (
+                      {getPercentage(msmeStats.Others, msmeStats.total).toFixed(
+                        1
+                      )}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(msmeStats.Others, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(msmeStats.Others, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -235,28 +328,38 @@ export default function Analytics() {
             <Card>
               <CardHeader>
                 <CardTitle>Status Summary</CardTitle>
-                <CardDescription>Key insights from MSME status data</CardDescription>
+                <CardDescription>
+                  Key insights from MSME status data
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center p-6 bg-muted/50 rounded-lg">
                   <div className="text-3xl font-bold text-green-600 mb-2">
                     {getPercentage(msmeStats.MSME, msmeStats.total).toFixed(1)}%
                   </div>
-                  <p className="text-sm text-muted-foreground">MSME Compliance Rate</p>
+                  <p className="text-sm text-muted-foreground">
+                    MSME Compliance Rate
+                  </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Certified MSME vendors:</span>
-                    <span className="font-medium text-green-600">{msmeStats.MSME}</span>
+                    <span className="font-medium text-green-600">
+                      {msmeStats.MSME}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Non-MSME vendors:</span>
-                    <span className="font-medium text-red-600">{msmeStats['Non MSME']}</span>
+                    <span className="font-medium text-red-600">
+                      {msmeStats["Non MSME"]}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Pending/Others:</span>
-                    <span className="font-medium text-yellow-600">{msmeStats.Others}</span>
+                    <span className="font-medium text-yellow-600">
+                      {msmeStats.Others}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -269,36 +372,57 @@ export default function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Micro Enterprises</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Micro Enterprises
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{categoryStats.Micro}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {categoryStats.Micro}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Micro, msmeStats.total).toFixed(1)}% of total
+                  {getPercentage(categoryStats.Micro, msmeStats.total).toFixed(
+                    1
+                  )}
+                  % of total
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Small Enterprises</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Small Enterprises
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-600">{categoryStats.Small}</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {categoryStats.Small}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Small, msmeStats.total).toFixed(1)}% of total
+                  {getPercentage(categoryStats.Small, msmeStats.total).toFixed(
+                    1
+                  )}
+                  % of total
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Medium Enterprises</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Medium Enterprises
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{categoryStats.Medium}</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {categoryStats.Medium}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Medium, msmeStats.total).toFixed(1)}% of total
+                  {getPercentage(categoryStats.Medium, msmeStats.total).toFixed(
+                    1
+                  )}
+                  % of total
                 </p>
               </CardContent>
             </Card>
@@ -308,9 +432,14 @@ export default function Analytics() {
                 <CardTitle className="text-sm font-medium">Others</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-600">{categoryStats.Others}</div>
+                <div className="text-2xl font-bold text-gray-600">
+                  {categoryStats.Others}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {getPercentage(categoryStats.Others, msmeStats.total).toFixed(1)}% of total
+                  {getPercentage(categoryStats.Others, msmeStats.total).toFixed(
+                    1
+                  )}
+                  % of total
                 </p>
               </CardContent>
             </Card>
@@ -331,11 +460,16 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Micro</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {categoryStats.Micro} ({getPercentage(categoryStats.Micro, msmeStats.total).toFixed(1)}%)
+                      {categoryStats.Micro} (
+                      {getPercentage(
+                        categoryStats.Micro,
+                        msmeStats.total
+                      ).toFixed(1)}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(categoryStats.Micro, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(categoryStats.Micro, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -347,11 +481,16 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Small</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {categoryStats.Small} ({getPercentage(categoryStats.Small, msmeStats.total).toFixed(1)}%)
+                      {categoryStats.Small} (
+                      {getPercentage(
+                        categoryStats.Small,
+                        msmeStats.total
+                      ).toFixed(1)}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(categoryStats.Small, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(categoryStats.Small, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -363,11 +502,16 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Medium</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {categoryStats.Medium} ({getPercentage(categoryStats.Medium, msmeStats.total).toFixed(1)}%)
+                      {categoryStats.Medium} (
+                      {getPercentage(
+                        categoryStats.Medium,
+                        msmeStats.total
+                      ).toFixed(1)}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(categoryStats.Medium, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(categoryStats.Medium, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -379,11 +523,16 @@ export default function Analytics() {
                       <span className="text-sm font-medium">Others</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {categoryStats.Others} ({getPercentage(categoryStats.Others, msmeStats.total).toFixed(1)}%)
+                      {categoryStats.Others} (
+                      {getPercentage(
+                        categoryStats.Others,
+                        msmeStats.total
+                      ).toFixed(1)}
+                      %)
                     </span>
                   </div>
-                  <Progress 
-                    value={getPercentage(categoryStats.Others, msmeStats.total)} 
+                  <Progress
+                    value={getPercentage(categoryStats.Others, msmeStats.total)}
                     className="h-2"
                   />
                 </div>
@@ -393,24 +542,34 @@ export default function Analytics() {
             <Card>
               <CardHeader>
                 <CardTitle>Category Insights</CardTitle>
-                <CardDescription>Enterprise size distribution analysis</CardDescription>
+                <CardDescription>
+                  Enterprise size distribution analysis
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{categoryStats.Micro}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {categoryStats.Micro}
+                    </div>
                     <p className="text-xs text-blue-700">Micro</p>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{categoryStats.Small}</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {categoryStats.Small}
+                    </div>
                     <p className="text-xs text-purple-700">Small</p>
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{categoryStats.Medium}</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {categoryStats.Medium}
+                    </div>
                     <p className="text-xs text-orange-700">Medium</p>
                   </div>
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-600">{categoryStats.Others}</div>
+                    <div className="text-2xl font-bold text-gray-600">
+                      {categoryStats.Others}
+                    </div>
                     <p className="text-xs text-gray-700">Others</p>
                   </div>
                 </div>

@@ -84,8 +84,8 @@ async def get_dashboard_metrics(
     total_campaigns = campaigns_query.count()
     active_campaigns = campaigns_query.filter(Campaign.status == CampaignStatus.ACTIVE).count()
     
-    # Total vendors
-    total_vendors = db.query(Vendor).filter(Vendor.is_active == True).count()
+    # Total vendors (remove is_active filter since field doesn't exist)
+    total_vendors = db.query(Vendor).count()
     
     # Response statistics
     responses_query = db.query(MSMEResponse)
