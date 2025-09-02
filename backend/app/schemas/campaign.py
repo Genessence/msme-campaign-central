@@ -32,7 +32,7 @@ class CampaignBase(BaseModel):
 
 
 class CampaignCreate(CampaignBase):
-    pass
+    status: Optional[CampaignStatus] = CampaignStatus.DRAFT
 
 
 class CampaignUpdate(BaseModel):

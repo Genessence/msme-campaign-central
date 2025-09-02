@@ -92,13 +92,14 @@ export default function CreateCampaign() {
       const campaignData = {
         name: formData.name,
         description: formData.description || null,
+        status: 'Active', // Set status to Active when campaign is completed through wizard (matches backend enum)
         deadline: formData.deadline
           ? new Date(formData.deadline).toISOString()
           : null,
         target_vendors: formData.selectedVendors,
         email_template_id: formData.emailTemplateId || null,
         whatsapp_template_id: formData.whatsappTemplateId || null,
-        communication_only: true, // Set to true if no templates selected
+        communication_only: !formData.emailTemplateId && !formData.whatsappTemplateId, // Only true if no templates selected
       };
 
       console.log(

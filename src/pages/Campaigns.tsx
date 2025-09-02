@@ -3,12 +3,23 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { fastApiClient } from '@/lib/fastapi-client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Trash2, StopCircle, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -39,6 +50,7 @@ interface Campaign {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'Active': return 'bg-green-100 text-green-800 border-green-200';
+    case 'Published': return 'bg-green-100 text-green-800 border-green-200';
     case 'Draft': return 'bg-gray-100 text-gray-800 border-gray-200';
     case 'Completed': return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
@@ -130,6 +142,7 @@ export default function Campaigns() {
 
   const handleEndCampaign = async (campaignId: string, campaignName: string) => {
     try {
+      console.log('Ending campaign:', campaignId, campaignName);
       await fastApiClient.campaigns.update(campaignId, { status: 'Completed' });
 
       toast({
@@ -142,7 +155,28 @@ export default function Campaigns() {
       console.error('Error ending campaign:', error);
       toast({
         title: "Error",
-        description: "Failed to end campaign. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to end campaign. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId: string, campaignName: string) => {
+    try {
+      console.log('Deleting campaign:', campaignId, campaignName);
+      await fastApiClient.campaigns.delete(campaignId);
+
+      toast({
+        title: "Campaign Deleted",
+        description: `Campaign "${campaignName}" has been successfully deleted.`,
+      });
+
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete campaign. Please try again.",
         variant: "destructive",
       });
     }
@@ -349,16 +383,61 @@ export default function Campaigns() {
                                size="sm"
                                onClick={() => navigate(`/campaigns/${campaign.id}`)}
                              >
+                               <Eye className="h-4 w-4 mr-1" />
                                View Details
                              </Button>
+                             
                              {campaign.status === 'Active' && (
-                               <Button 
-                                 variant="destructive" 
-                                 size="sm"
-                                 onClick={() => handleEndCampaign(campaign.id, campaign.name)}
-                               >
-                                 End Campaign
-                               </Button>
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button variant="destructive" size="sm">
+                                     <StopCircle className="h-4 w-4 mr-1" />
+                                     End Campaign
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>End Campaign</AlertDialogTitle>
+                                     <AlertDialogDescription>
+                                       Are you sure you want to end the campaign "{campaign.name}"? This action will mark it as completed and stop all communications.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                     <AlertDialogAction onClick={() => handleEndCampaign(campaign.id, campaign.name)}>
+                                       End Campaign
+                                     </AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
+                             )}
+                             
+                             {(campaign.status === 'Draft' || campaign.status === 'Completed' || campaign.status === 'Cancelled') && (
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                                     <Trash2 className="h-4 w-4 mr-1" />
+                                     Delete
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>Delete Campaign</AlertDialogTitle>
+                                     <AlertDialogDescription>
+                                       Are you sure you want to delete the campaign "{campaign.name}"? This action cannot be undone.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                     <AlertDialogAction 
+                                       onClick={() => handleDeleteCampaign(campaign.id, campaign.name)}
+                                       className="bg-red-600 hover:bg-red-700"
+                                     >
+                                       Delete Campaign
+                                     </AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
                              )}
                            </div>
                          </TableCell>
