@@ -9,18 +9,19 @@ import logging
 from typing import Optional, List
 import os
 from pathlib import Path
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class EmailService:
     def __init__(self):
-        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        self.smtp_username = os.getenv("SMTP_USERNAME", "")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
-        self.from_email = os.getenv("FROM_EMAIL", self.smtp_username)
-        self.from_name = os.getenv("FROM_NAME", "MSME Campaign Central")
+        self.smtp_server = settings.SMTP_SERVER
+        self.smtp_port = settings.SMTP_PORT
+        self.smtp_username = settings.SMTP_USERNAME or ""
+        self.smtp_password = settings.SMTP_PASSWORD or ""
+        self.from_email = settings.SMTP_USERNAME if settings.SMTP_USERNAME else settings.FROM_EMAIL
+        self.from_name = settings.FROM_NAME
 
     async def send_email(
         self,
@@ -80,11 +81,20 @@ class EmailService:
             # Create secure connection
             context = ssl.create_default_context()
             
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls(context=context)
-                server.login(self.smtp_username, self.smtp_password)
-                text = message.as_string()
-                server.sendmail(self.from_email, to_email, text)
+            # Handle different ports: 465 (SSL) vs 587 (STARTTLS)
+            if self.smtp_port == 465:
+                # Port 465 uses SSL from the start
+                with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, context=context) as server:
+                    server.login(self.smtp_username, self.smtp_password)
+                    text = message.as_string()
+                    server.sendmail(self.from_email, to_email, text)
+            else:
+                # Port 587 uses STARTTLS
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls(context=context)
+                    server.login(self.smtp_username, self.smtp_password)
+                    text = message.as_string()
+                    server.sendmail(self.from_email, to_email, text)
             
             return True
             
@@ -184,9 +194,16 @@ class EmailService:
 
             context = ssl.create_default_context()
             
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls(context=context)
-                server.login(self.smtp_username, self.smtp_password)
+            # Handle different ports: 465 (SSL) vs 587 (STARTTLS)
+            if self.smtp_port == 465:
+                # Port 465 uses SSL from the start
+                with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, context=context) as server:
+                    server.login(self.smtp_username, self.smtp_password)
+            else:
+                # Port 587 uses STARTTLS
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls(context=context)
+                    server.login(self.smtp_username, self.smtp_password)
             
             return {
                 'success': True,

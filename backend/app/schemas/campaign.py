@@ -219,3 +219,17 @@ class TemplatePreviewResponse(BaseModel):
     subject: Optional[str] = None  # For email templates
     variables_used: List[str]
     missing_variables: List[str]
+
+
+# Email Request Schemas
+class TestEmailRequest(BaseModel):
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
+    template_id: str
+    template_type: str = Field(..., pattern=r'^(email|whatsapp)$')
+
+
+class SendEmailsRequest(BaseModel):
+    vendor_ids: List[str]
+    template_id: str
+    template_type: str = Field(..., pattern=r'^(email|whatsapp)$')
+    test_mode: bool = False

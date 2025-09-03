@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     FROM_EMAIL: str = "noreply@yourcompany.com"
     
+    # SMTP Configuration
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    FROM_NAME: str = "MSME Campaign Central"
+    
     # WhatsApp
     WHATSAPP_ACCESS_TOKEN: Optional[str] = None
     WHATSAPP_PHONE_NUMBER_ID: Optional[str] = None

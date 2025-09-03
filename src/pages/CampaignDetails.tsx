@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
+import CampaignEmailSender from '@/components/CampaignEmailSender';
 
 interface CampaignDetails {
   id: string;
@@ -338,6 +339,7 @@ export default function CampaignDetails() {
         <TabsList>
           <TabsTrigger value="responses">Vendor Responses</TabsTrigger>
           <TabsTrigger value="emails">Email Tracking</TabsTrigger>
+          <TabsTrigger value="send-emails">Send Emails</TabsTrigger>
           <TabsTrigger value="details">Campaign Details</TabsTrigger>
         </TabsList>
 
@@ -476,6 +478,13 @@ export default function CampaignDetails() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="send-emails">
+          <CampaignEmailSender 
+            campaignId={campaign.id} 
+            campaignName={campaign.name}
+          />
         </TabsContent>
 
         <TabsContent value="details">

@@ -12,7 +12,9 @@ from app.core.security import verify_role
 from app.services.file_service import FileUploadService
 from app.services.email_service import EmailService
 from app.services.whatsapp_service import WhatsAppService
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/upload")
@@ -410,4 +412,43 @@ async def check_file_service_health():
         return {
             "status": "unhealthy",
             "error": str(e)
+        }
+
+
+# SMTP Test endpoint (no authentication required)
+@router.get("/smtp-test")
+async def test_smtp_configuration():
+    """Test SMTP configuration - public endpoint for debugging"""
+    try:
+        logger.info("SMTP test endpoint called via files router")
+        email_service = EmailService()
+        logger.info("EmailService created")
+        
+        # Test connection
+        result = email_service.test_smtp_connection()
+        logger.info(f"SMTP test result: {result}")
+        
+        response_data = {
+            "smtp_server": email_service.smtp_server,
+            "smtp_port": email_service.smtp_port,
+            "smtp_username": email_service.smtp_username,
+            "from_email": email_service.from_email,
+            "connection_test": result
+        }
+        logger.info(f"Returning response: {response_data}")
+        return response_data
+        
+    except Exception as e:
+        logger.error(f"SMTP test failed with exception: {str(e)}")
+        logger.error(f"Exception type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "connection_test": {
+                "success": False,
+                "message": "SMTP test failed",
+                "details": str(e)
+            }
         }
