@@ -31,7 +31,7 @@ class CampaignService:
         test_mode: bool = False,
         batch_size: int = 50
     ):
-        """Execute campaign in background task"""
+        """Execute campaign in background task using batch processing"""
         try:
             logger.info(f"Starting campaign execution: {campaign_id} (task: {task_id})")
             
@@ -48,63 +48,71 @@ class CampaignService:
             
             logger.info(f"Found {len(vendors)} vendors for campaign {campaign_id}")
             
-            # Process vendors in batches
-            total_vendors = len(vendors)
-            processed = 0
+            # Create response records for all vendors
+            try:
+                for vendor in vendors:
+                    response = MSMEResponse(
+                        campaign_id=campaign_id,
+                        vendor_id=vendor.id,
+                        response_status=ResponseStatus.PENDING
+                    )
+                    self.db.add(response)
+                self.db.commit()
+                logger.info(f"Created response records for {len(vendors)} vendors")
+            except Exception as e:
+                logger.error(f"Failed to create response records: {str(e)}")
+                return
+
             successful_emails = 0
             successful_whatsapp = 0
             failed_sends = 0
             
-            for i in range(0, total_vendors, batch_size):
-                batch = vendors[i:i + batch_size]
-                logger.info(f"Processing batch {i//batch_size + 1} with {len(batch)} vendors")
-                
-                for vendor in batch:
-                    try:
-                        # Create response record
-                        response = MSMEResponse(
-                            campaign_id=campaign_id,
-                            vendor_id=vendor.id,
-                            response_status=ResponseStatus.PENDING
-                        )
-                        self.db.add(response)
-                        self.db.commit()
+            # Process emails using bulk email service
+            if send_emails and campaign.email_template_id:
+                try:
+                    email_results = await self._execute_campaign_emails(campaign, vendors, test_mode)
+                    successful_emails = email_results.get('successful', 0)
+                    failed_sends += email_results.get('failed', 0)
+                    logger.info(f"Email campaign results: {successful_emails} successful, {email_results.get('failed', 0)} failed")
+                except Exception as e:
+                    logger.error(f"Failed to execute email campaign: {str(e)}")
+                    failed_sends += len(vendors)
+            
+            # Process WhatsApp messages individually (until we implement bulk WhatsApp)
+            if send_whatsapp and campaign.whatsapp_template_id:
+                try:
+                    for i in range(0, len(vendors), batch_size):
+                        batch = vendors[i:i + batch_size]
+                        logger.info(f"Processing WhatsApp batch {i//batch_size + 1} with {len(batch)} vendors")
                         
-                        # Send email if requested
-                        if send_emails and campaign.email_template_id:
-                            success = await self._send_campaign_email(campaign, vendor, test_mode)
-                            if success:
-                                successful_emails += 1
-                            else:
+                        for vendor in batch:
+                            try:
+                                success = await self._send_campaign_whatsapp(campaign, vendor, test_mode)
+                                if success:
+                                    successful_whatsapp += 1
+                                else:
+                                    failed_sends += 1
+                            except Exception as e:
+                                logger.error(f"Error sending WhatsApp to vendor {vendor.id}: {str(e)}")
                                 failed_sends += 1
                         
-                        # Send WhatsApp if requested
-                        if send_whatsapp and campaign.whatsapp_template_id:
-                            success = await self._send_campaign_whatsapp(campaign, vendor, test_mode)
-                            if success:
-                                successful_whatsapp += 1
-                            else:
-                                failed_sends += 1
-                        
-                        processed += 1
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing vendor {vendor.id}: {str(e)}")
-                        failed_sends += 1
-                
-                # Small delay between batches
-                await asyncio.sleep(1)
+                        # Small delay between batches
+                        await asyncio.sleep(1)
+                except Exception as e:
+                    logger.error(f"Failed to execute WhatsApp campaign: {str(e)}")
+                    failed_sends += len(vendors)
             
             # Update campaign status
-            if processed == total_vendors:
+            total_processed = successful_emails + successful_whatsapp
+            if total_processed > 0:
                 campaign.status = CampaignStatus.COMPLETED
             else:
-                campaign.status = CampaignStatus.ACTIVE
+                campaign.status = CampaignStatus.CANCELLED
             
             self.db.commit()
             
             logger.info(f"Campaign {campaign_id} execution completed. "
-                       f"Processed: {processed}, Email success: {successful_emails}, "
+                       f"Total vendors: {len(vendors)}, Email success: {successful_emails}, "
                        f"WhatsApp success: {successful_whatsapp}, Failed: {failed_sends}")
             
         except Exception as e:
@@ -137,7 +145,58 @@ class CampaignService:
                         size = criteria.replace('size:', '')
                         query = query.filter(Vendor.business_size == size)
         
-        return query.filter(Vendor.is_active == True).all()
+        return query.filter(Vendor.email.isnot(None)).all()
+
+    async def _execute_campaign_emails(self, campaign: Campaign, vendors: List[Vendor], test_mode: bool = False) -> dict:
+        """Execute email campaign using bulk email service"""
+        try:
+            email_template = self.db.query(EmailTemplate).filter(
+                EmailTemplate.id == campaign.email_template_id
+            ).first()
+            
+            if not email_template:
+                logger.error("Email template not found for campaign")
+                return {'successful': 0, 'failed': len(vendors)}
+            
+            if test_mode:
+                logger.info(f"TEST MODE: Would send bulk emails to {len(vendors)} vendors")
+                return {'successful': len(vendors), 'failed': 0}
+            
+            # Prepare email data for bulk sending
+            email_data = []
+            for vendor in vendors:
+                try:
+                    # Render template with vendor data
+                    subject = self.template_service.render_template(email_template.subject, vendor)
+                    body = self.template_service.render_template(email_template.body, vendor)
+                    
+                    email_data.append({
+                        'to_email': vendor.email,
+                        'subject': subject,
+                        'body': body,
+                        'vendor_name': vendor.name
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to prepare email for vendor {vendor.id}: {str(e)}")
+            
+            if not email_data:
+                logger.warning("No email data prepared for bulk sending")
+                return {'successful': 0, 'failed': len(vendors)}
+            
+            logger.info(f"Sending bulk emails to {len(email_data)} vendors using batch processing")
+            
+            # Use bulk email service with batch processing
+            results = await self.email_service.send_bulk_emails(email_data)
+            
+            successful = results.get('successful', 0)
+            failed = results.get('failed', 0)
+            
+            logger.info(f"Bulk email campaign completed: {successful} successful, {failed} failed")
+            return {'successful': successful, 'failed': failed}
+            
+        except Exception as e:
+            logger.error(f"Failed to execute campaign emails: {str(e)}")
+            return {'successful': 0, 'failed': len(vendors)}
 
     async def _send_campaign_email(self, campaign: Campaign, vendor: Vendor, test_mode: bool = False) -> bool:
         """Send email to vendor"""
