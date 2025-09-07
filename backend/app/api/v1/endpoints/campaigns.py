@@ -409,8 +409,8 @@ async def send_campaign_emails(
                 email_list=email_list,
                 subject_template=subject_template,
                 body_template=body_template,
-                batch_size=5,  # Small batches to avoid spam detection
-                delay_between_batches=2.0
+                batch_size=100,  # Process 100 emails per batch
+                delay_between_batches=3.0  # 3 second delay between batches
             )
             
             logger.info(f"Bulk email result for campaign {campaign_id}: {result}")

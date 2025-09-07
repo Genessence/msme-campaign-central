@@ -167,6 +167,18 @@ export default function CampaignEmailSender({ campaignId, campaignName }: Campai
       return;
     }
 
+    const estimatedBatches = Math.ceil(selectedVendors.length / 100);
+    const estimatedTime = estimatedBatches * 3; // 3 seconds per batch
+
+    const proceed = window.confirm(
+      `Send emails to ${selectedVendors.length} vendors?\n\n` +
+      `This will be processed in ${estimatedBatches} batch(es) of 100 emails.\n` +
+      `Estimated time: ${estimatedTime} seconds (${Math.ceil(estimatedTime / 60)} minutes)\n\n` +
+      `Click OK to proceed.`
+    );
+
+    if (!proceed) return;
+
     setSendingEmails(true);
     try {
       const result = await fastApiClient.campaigns.sendEmails(
@@ -178,8 +190,8 @@ export default function CampaignEmailSender({ campaignId, campaignName }: Campai
       );
       
       toast({
-        title: "Success",
-        description: result.message || `Emails being sent to ${selectedVendors.length} vendors`,
+        title: "Batch Email Processing Started",
+        description: `Emails are being sent to ${selectedVendors.length} vendors in batches of 100. Processing will take approximately ${estimatedTime} seconds.`,
       });
       
       // Clear selections after successful send

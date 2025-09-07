@@ -128,54 +128,87 @@ class EmailService:
         email_list: List[dict],
         subject_template: str,
         body_template: str,
-        batch_size: int = 10,
-        delay_between_batches: float = 1.0
+        batch_size: int = 100,
+        delay_between_batches: float = 2.0
     ) -> dict:
         """Send bulk emails with rate limiting"""
         results = {
             'total': len(email_list),
             'sent': 0,
             'failed': 0,
-            'errors': []
+            'errors': [],
+            'batches_processed': 0,
+            'batch_size': batch_size
         }
 
         try:
+            logger.info(f"Starting bulk email send for {len(email_list)} emails in batches of {batch_size}")
+            
             # Process emails in batches
             for i in range(0, len(email_list), batch_size):
+                batch_number = i // batch_size + 1
                 batch = email_list[i:i + batch_size]
                 
-                # Send batch concurrently
-                tasks = []
-                for email_data in batch:
-                    task = self.send_email(
-                        to_email=email_data['email'],
-                        subject=subject_template.format(**email_data),
-                        body=body_template.format(**email_data),
-                        vendor_name=email_data.get('name', '')
-                    )
-                    tasks.append(task)
+                logger.info(f"Processing batch {batch_number}: emails {i+1} to {min(i+batch_size, len(email_list))}")
                 
-                # Wait for batch to complete
-                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+                # Send batch concurrently with smaller sub-batches to avoid overwhelming SMTP
+                sub_batch_size = 10  # Send 10 emails concurrently within each batch
+                batch_sent = 0
+                batch_failed = 0
                 
-                # Process results
-                for j, result in enumerate(batch_results):
-                    if isinstance(result, Exception):
-                        results['failed'] += 1
-                        results['errors'].append(f"Email {i+j}: {str(result)}")
-                    elif result:
-                        results['sent'] += 1
-                    else:
-                        results['failed'] += 1
-                        results['errors'].append(f"Email {i+j}: Unknown error")
+                for j in range(0, len(batch), sub_batch_size):
+                    sub_batch = batch[j:j + sub_batch_size]
+                    
+                    # Send sub-batch concurrently
+                    tasks = []
+                    for email_data in sub_batch:
+                        task = self.send_email(
+                            to_email=email_data['email'],
+                            subject=subject_template.format(**email_data),
+                            body=body_template.format(**email_data),
+                            vendor_name=email_data.get('name', '')
+                        )
+                        tasks.append(task)
+                    
+                    # Wait for sub-batch to complete
+                    sub_batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+                    
+                    # Process sub-batch results
+                    for k, result in enumerate(sub_batch_results):
+                        email_index = i + j + k
+                        if isinstance(result, Exception):
+                            batch_failed += 1
+                            results['failed'] += 1
+                            error_msg = f"Email {email_index + 1} ({sub_batch[k]['email']}): {str(result)}"
+                            results['errors'].append(error_msg)
+                            logger.error(error_msg)
+                        elif result:
+                            batch_sent += 1
+                            results['sent'] += 1
+                            logger.info(f"Email {email_index + 1} sent successfully to {sub_batch[k]['email']}")
+                        else:
+                            batch_failed += 1
+                            results['failed'] += 1
+                            error_msg = f"Email {email_index + 1} ({sub_batch[k]['email']}): Unknown error"
+                            results['errors'].append(error_msg)
+                            logger.error(error_msg)
+                    
+                    # Small delay between sub-batches to avoid rate limiting
+                    if j + sub_batch_size < len(batch):
+                        await asyncio.sleep(0.5)
                 
-                # Delay between batches
+                results['batches_processed'] += 1
+                logger.info(f"Batch {batch_number} completed: {batch_sent} sent, {batch_failed} failed")
+                
+                # Delay between main batches
                 if i + batch_size < len(email_list):
+                    logger.info(f"Waiting {delay_between_batches} seconds before next batch...")
                     await asyncio.sleep(delay_between_batches)
                 
-                logger.info(f"Processed batch {i//batch_size + 1}: "
-                           f"{results['sent']}/{results['total']} sent")
+                logger.info(f"Progress: {results['sent']}/{results['total']} emails sent ({results['batches_processed']} batches)")
 
+            logger.info(f"Bulk email send completed: {results['sent']} sent, {results['failed']} failed")
+            
         except Exception as e:
             logger.error(f"Bulk email sending failed: {str(e)}")
             results['errors'].append(f"Bulk sending error: {str(e)}")
